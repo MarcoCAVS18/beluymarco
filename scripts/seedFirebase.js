@@ -182,7 +182,7 @@ async function seedHousekeeping() {
   console.log('📝 Seeding housekeeping...');
   const batch = writeBatch(db);
 
-  const housekeeping = housekeepingData.default.map((item, index) => ({
+  const housekeeping = housekeepingData.map((item, index) => ({
     id: index + 1,
     name: item["Nombre de la Empresa"] || '',
     email: item["Email de Contacto"] || '',

@@ -108,7 +108,11 @@ const CopyBlock = ({ title, text, onTextChange }) => {
 
 const ResourcesView = () => {
   const [sector, setSector] = useState('winery'); // 'winery' or 'housekeeping'
+  
+  // Firebase Hooks
   const { templates, loading: templatesLoading, updateTemplate } = useTemplates();
+  
+  // Importamos resumes y otherDocuments desde useConfig (Base de Datos)
   const { resumes = [], otherDocuments = [], loading: configLoading } = useConfig();
 
   const loading = templatesLoading || configLoading;
@@ -154,21 +158,22 @@ const ResourcesView = () => {
 
       {/* Download Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {RESUMES.filter(r => r.type.toLowerCase() === sector).map((resume) => (
-           <div key={resume.id} className="bg-dark-surface border border-dark-hover p-4 rounded-xl flex justify-between items-center group hover:border-accent transition-all duration-200 hover:shadow-lg hover:shadow-accent/10">
-             <div>
-               <p className="font-semibold">{resume.person}'s Resume</p>
-               <p className="text-xs text-dark-subtext uppercase">{resume.type}</p>
-             </div>
-             <a
-               href={resume.path}
-               download={resume.file}
-               className="p-2 bg-dark-bg rounded-full text-dark-text group-hover:text-accent transition-all duration-200 hover:scale-110"
-               title="Download resume"
-             >
-               <FileDown size={20} className="group-hover:animate-bounce" />
-             </a>
-           </div>
+        {/* Filtramos usando los datos de la DB en lugar de las constantes */}
+        {resumes.filter(r => r.type.toLowerCase() === sector).map((resume) => (
+          <div key={resume.id} className="bg-dark-surface border border-dark-hover p-4 rounded-xl flex justify-between items-center group hover:border-accent transition-all duration-200 hover:shadow-lg hover:shadow-accent/10">
+            <div>
+              <p className="font-semibold">{resume.person}'s Resume</p>
+              <p className="text-xs text-dark-subtext uppercase">{resume.type}</p>
+            </div>
+            <a
+              href={resume.path}
+              download={resume.file}
+              className="p-2 bg-dark-bg rounded-full text-dark-text group-hover:text-accent transition-all duration-200 hover:scale-110"
+              title="Download resume"
+            >
+              <FileDown size={20} className="group-hover:animate-bounce" />
+            </a>
+          </div>
         ))}
       </div>
 
@@ -179,7 +184,7 @@ const ResourcesView = () => {
         <h3 className="text-xl font-semibold mb-4">Email Body (Copy & Paste)</h3>
         <CopyBlock
           title="Short & Direct Email Template"
-          text={templates[sector].email}
+          text={templates[sector]?.email || ''} // Acceso seguro por si está vacío
           onTextChange={handleEmailChange}
         />
       </div>
@@ -188,7 +193,7 @@ const ResourcesView = () => {
         <h3 className="text-xl font-semibold mb-4">Cover Letter (Couple Team)</h3>
         <CopyBlock
           title="Cover Letter Content"
-          text={templates[sector].coverLetter}
+          text={templates[sector]?.coverLetter || ''}
           onTextChange={handleCoverLetterChange}
         />
       </div>
@@ -197,7 +202,7 @@ const ResourcesView = () => {
       <div>
         <h3 className="text-xl font-semibold mb-4">Other Relevant Documents</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {OTHER_DOCUMENTS.map((doc) => (
+          {otherDocuments.map((doc) => (
             <div key={doc.id} className="bg-dark-sidebar border border-dark-hover p-4 rounded-xl flex justify-between items-center group hover:border-accent transition-all duration-200 hover:shadow-lg hover:shadow-accent/10">
               <div>
                 <p className="font-semibold flex items-center gap-2">
