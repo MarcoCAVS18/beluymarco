@@ -1,0 +1,704 @@
+[
+  {
+    "Bodega (Weingut)": "Weingut Lergenmüller",
+    "Ubicación": "Hainfeld (Palatinado, Alemania)",
+    "Inicio de vendimia": "finales de agosto",
+    "Email de contacto": "info@lergenmueller.de"
+  },
+  {
+    "Bodega (Weingut)": "Weingut Juliusspital",
+    "Ubicación": "Würzburg (Franconia, Bayern)",
+    "Inicio de vendimia": "mediados de septiembre",
+    "Email de contacto": "weingut@juliusspital.de"
+  },
+  {
+    "Bodega (Weingut)": "Weingut 1616 Pfaffmann (Heinz Pfaffmann)",
+    "Ubicación": "Walsheim (Palatinado, Alemania)",
+    "Inicio de vendimia": "finales de agosto",
+    "Email de contacto": "p.hener@1616pfaffmann.com"
+  },
+  {
+    "Bodega (Weingut)": "Hessische Staatsweingüter „Kloster Eberbach“",
+    "Ubicación": "Eltville (Rheingau, Hesse)",
+    "Inicio de vendimia": "mediados de septiembre",
+    "Email de contacto": "weingut@kloster-eberbach.de"
+  },
+  {
+    "Bodega (Weingut)": "Bischöfliche Weingüter Trier",
+    "Ubicación": "Trier (Mosela, Rheinland-Pfalz)",
+    "Inicio de vendimia": "finales de septiembre",
+    "Email de contacto": "info@bischoeflicheweingueter.de"
+  },
+  {
+    "Bodega (Weingut)": "Staatlicher Hofkeller Würzburg",
+    "Ubicación": "Würzburg (Franconia, Bayern)",
+    "Inicio de vendimia": "mediados de septiembre",
+    "Email de contacto": "hofkeller@hofkeller.de"
+  },
+  {
+    "Bodega (Weingut)": "Stiftung Bürgerspital zum Hl. Geist",
+    "Ubicación": "Würzburg (Franconia, Bayern)",
+    "Inicio de vendimia": "mediados de septiembre",
+    "Email de contacto": "weingut@buergerspital.de"
+  },
+  {
+    "Bodega (Weingut)": "Weingut Egon Müller – Scharzhof",
+    "Ubicación": "Wiltingen (Saar, Alemania)",
+    "Inicio de vendimia": "finales de septiembre",
+    "Email de contacto": "egon@egon-mueller.de"
+  },
+  {
+    "Bodega (Weingut)": "Weingut Joh. Jos. Prüm",
+    "Ubicación": "Bernkastel-Wehlen (Mosela)",
+    "Inicio de vendimia": "finales de septiembre",
+    "Email de contacto": "info@jjpruem.com"
+  },
+  {
+    "Bodega (Weingut)": "Weingut Wittmann",
+    "Ubicación": "Westhofen (Rheinhessen)",
+    "Inicio de vendimia": "mediados de septiembre",
+    "Email de contacto": "info@wittmannweingut.com"
+  },
+  {
+    "Bodega (Weingut)": "Weingut Schnaitmann",
+    "Ubicación": "Fellbach (Württemberg)",
+    "Inicio de vendimia": "inicios de septiembre",
+    "Email de contacto": "info@weingut-schnaitmann.de"
+  },
+  {
+    "Bodega (Weingut)": "Weingut Aldinger",
+    "Ubicación": "Fellbach (Württemberg)",
+    "Inicio de vendimia": "inicios de septiembre",
+    "Email de contacto": "info@weingut-aldinger.de"
+  },
+  {
+    "Bodega (Weingut)": "Pegasus Bay",
+    "Ubicación": "Waipara (North Canterbury)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@pegasusbay.com"
+  },
+  {
+    "Bodega (Weingut)": "Giesen Wines",
+    "Ubicación": "Christchurch (Canterbury)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "enquiries@giesengroup.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Black Estate",
+    "Ubicación": "Omihi (North Canterbury)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "connect@blackestate.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Pyramid Valley",
+    "Ubicación": "Waikari (Canterbury)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@pyramidvalley.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Coopers Creek Vineyard",
+    "Ubicación": "Kumeu (Auckland)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "ccv_info@cooperscreek.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Soljans Estate Winery",
+    "Ubicación": "Kumeu (Auckland)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "cellar@soljans.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Westbrook Winery",
+    "Ubicación": "Kumeu (Auckland)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@westbrook.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Saint Clair Family Estate",
+    "Ubicación": "Blenheim (Marlborough)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "cellardoor@saintclair.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Blank Canvas Wines",
+    "Ubicación": "Marlborough (Región de Blenheim)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "sales@blankcanvaswines.com"
+  },
+  {
+    "Bodega (Weingut)": "Framingham Wines",
+    "Ubicación": "Renwick (Marlborough)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@framingham.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Nautilus Estate",
+    "Ubicación": "Renwick (Marlborough)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Auntsfield Estate",
+    "Ubicación": "Blenheim (Marlborough)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@auntsfield.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Cloudy Bay Vineyards",
+    "Ubicación": "Woodbourne/Blenheim (Marlborough)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@cloudybay.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Villa Maria (Indevin Group)",
+    "Ubicación": "Fairhall, Blenheim (Marlborough)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "enquiries@villamaria.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "No.1 Family Estate",
+    "Ubicación": "Blenheim (Marlborough)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "No1wine@xtra.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Allan Scott Vineyard",
+    "Ubicación": "Blenheim (Marlborough)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@allanscott.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Dog Point Vineyard",
+    "Ubicación": "Renwick (Marlborough)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@dogpoint.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Seresin Estate",
+    "Ubicación": "Renwick (Marlborough)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "hello@seresin.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Astrolabe Wines",
+    "Ubicación": "Blenheim (Marlborough)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@astrolabewines.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Mudbrick Vineyards & HC",
+    "Ubicación": "Oneroa, Waiheke Island (Auckland)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@mudbrick.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Stonecroft Vineyards",
+    "Ubicación": "Hastings (Hawke’s Bay)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "wine@stonecroft.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Church Road Winery",
+    "Ubicación": "Napier (Hawke’s Bay)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "thecellardoor@churchroad.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Te Mata Estate",
+    "Ubicación": "Havelock North (Hawke’s Bay)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "cellardoor@temata.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Craggy Range Winery",
+    "Ubicación": "Havelock North (Hawke’s Bay)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@craggyrange.com"
+  },
+  {
+    "Bodega (Weingut)": "Elephant Hill",
+    "Ubicación": "Te Awanga (Hawke’s Bay)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@elephanthill.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Pask Winery (Benton Family)",
+    "Ubicación": "Hastings (Hawke’s Bay)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "pask@bentonwines.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Palliser Estate",
+    "Ubicación": "Martinborough (Wairarapa)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "palliser@palliser.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Ata Rangi Vineyard",
+    "Ubicación": "Martinborough (Wairarapa)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "wines@atarangi.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Te Kairanga",
+    "Ubicación": "Martinborough (Wairarapa)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@tekairanga.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Mount Difficulty Wines",
+    "Ubicación": "Bannockburn/Cromwell (Central Otago)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@mtdifficulty.nz"
+  },
+  {
+    "Bodega (Weingut)": "Felton Road Wines",
+    "Ubicación": "Bannockburn (Central Otago)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "wines@feltonroad.com"
+  },
+  {
+    "Bodega (Weingut)": "Quartz Reef Wines",
+    "Ubicación": "Cromwell (Central Otago)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@quartzreef.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Rippon Vineyard",
+    "Ubicación": "Lake Wanaka (Otago)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@rippon.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Valli Vineyards Ltd.",
+    "Ubicación": "Queenstown (Central Otago)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "sales@valliwine.com"
+  },
+  {
+    "Bodega (Weingut)": "Kumeu River Wines",
+    "Ubicación": "Kumeu (Auckland)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "Marijana@kumeuriver.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Babich Wines",
+    "Ubicación": "Henderson Valley (Auckland)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@babichwines.com"
+  },
+  {
+    "Bodega (Weingut)": "Neudorf Vineyards",
+    "Ubicación": "Upper Moutere (Nelson)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "wine@neudorf.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Seifried Estate",
+    "Ubicación": "Nelson (Tahunanui)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "wines@seifried.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Gibbston Valley Winery",
+    "Ubicación": "Queenstown (Central Otago)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "info@gibbstonvalley.com"
+  },
+  {
+    "Bodega (Weingut)": "Amisfield Wines",
+    "Ubicación": "Lake Hayes (Queenstown, Otago)",
+    "Inicio de vendimia": "Marzo/abril",
+    "Email de contacto": "admin@amisfield.co.nz"
+  },
+  {
+    "Bodega (Weingut)": "Domaines Barons de Rothschild (Lafite)",
+    "Ubicación": "Burdeos (Bordeaux, Nueva Aquitania)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "dbr@lafite.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Smith Haut Lafitte",
+    "Ubicación": "Martillac (Burdeos, Nueva Aquitania)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "visites@smith-haut-lafitte.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Pape Clément",
+    "Ubicación": "Pessac (Bordeaux, Nueva Aquitania)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "visiteschateaux@bernard-magrez.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Talbot",
+    "Ubicación": "Saint-Julien-Beychevelle (Burdeos)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "talbot@chateau-talbot.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Lagrange",
+    "Ubicación": "Saint-Julien-Beychevelle (Burdeos)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "contact@chateau-lagrange.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Montrose",
+    "Ubicación": "Saint-Estèphe (Burdeos)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "chateau@chateau-montrose.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Lynch-Bages",
+    "Ubicación": "Pauillac (Burdeos)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "contact@lynchbages.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Haut-Batailley",
+    "Ubicación": "Pauillac (Burdeos)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "contact@jmcazes.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Beychevelle",
+    "Ubicación": "Saint-Julien-Beychevelle (Burdeos)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "visite@beychevelle.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Ducru-Beaucaillou",
+    "Ubicación": "Saint-Julien-Beychevelle (Burdeos)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "ducru-beaucaillou@ducru-beaucaillou.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Gruaud-Larose",
+    "Ubicación": "Saint-Julien-Beychevelle (Burdeos)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "contact@chateau-gruaud-larose.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Le Puy",
+    "Ubicación": "Saint-Cibard (Burdeos)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "contact@familleamoreau.com"
+  },
+  {
+    "Bodega (Weingut)": "Domaine Jean-Charles Girard-Madoux",
+    "Ubicación": "Chignin (Saboia, Auv.‑Ródano‑Alpes)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "jcgirardmadoux@hotmail.fr"
+  },
+  {
+    "Bodega (Weingut)": "E. Guigal",
+    "Ubicación": "Ampuis (Ródano, Auv.‑Ródano‑Alpes)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "contact@guigal.com"
+  },
+  {
+    "Bodega (Weingut)": "Bouchard Père & Fils",
+    "Ubicación": "Beaune (Borgoña, Borgoña‑Franco Condado)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "rp@bouchard-pereetfils.com"
+  },
+  {
+    "Bodega (Weingut)": "Maison Joseph Drouhin",
+    "Ubicación": "Beaune (Borgoña, Borgoña‑Franco Condado)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "maisondrouhin@drouhin.com"
+  },
+  {
+    "Bodega (Weingut)": "Caves Jean Bourdy",
+    "Ubicación": "Arlay (Jura, Borgoña‑Franco Condado)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "contact@domainejeanbourdy.com"
+  },
+  {
+    "Bodega (Weingut)": "Domaine Faiveley",
+    "Ubicación": "Nuits-Saint-Georges (Borgoña)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "contact@domaine-faiveley.com"
+  },
+  {
+    "Bodega (Weingut)": "Domaine Virgile Joly",
+    "Ubicación": "Saint-Saturnin-de-Lucian (Hérault, Occitania)",
+    "Inicio de vendimia": "Fines de ago.",
+    "Email de contacto": "contact@dvj.fr"
+  },
+  {
+    "Bodega (Weingut)": "Domaine Cazes",
+    "Ubicación": "Rivesaltes (Pyrénées-Orientales, Occitania)",
+    "Inicio de vendimia": "Fines de ago.",
+    "Email de contacto": "anne-sophie.dapalma@cazes.com"
+  },
+  {
+    "Bodega (Weingut)": "Mas de Daumas Gassac",
+    "Ubicación": "Aniane (Hérault, Occitania)",
+    "Inicio de vendimia": "Fines de ago.",
+    "Email de contacto": "contact@daumas-gassac.com"
+  },
+  {
+    "Bodega (Weingut)": "Famille Lafage (Dom. Lafage)",
+    "Ubicación": "Perpiñán (Pyrénées-Orientales, Occitania)",
+    "Inicio de vendimia": "Fines de ago.",
+    "Email de contacto": "contact@domaine-lafage.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Saint Cosme",
+    "Ubicación": "Gigondas (Vaucluse, Provenza)",
+    "Inicio de vendimia": "Fines de ago.",
+    "Email de contacto": "contact@saintcosme.com"
+  },
+  {
+    "Bodega (Weingut)": "Château de Beaucastel",
+    "Ubicación": "Courthézon (Vaucluse, Provenza)",
+    "Inicio de vendimia": "Mediados de sep.",
+    "Email de contacto": "contact@beaucastel.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Saint-Cosme (D. Saint Cosme)",
+    "Ubicación": "Gigondas (Vaucluse, Provenza)",
+    "Inicio de vendimia": "Fines de ago.",
+    "Email de contacto": "–"
+  },
+  {
+    "Bodega (Weingut)": "Domaine de Mourchon",
+    "Ubicación": "Séguret (Vaucluse, Provenza)",
+    "Inicio de vendimia": "Fines de ago.",
+    "Email de contacto": "info@domainedemourchon.com"
+  },
+  {
+    "Bodega (Weingut)": "Domaine de la Croix",
+    "Ubicación": "La Croix-Valmer (Var, Provenza)",
+    "Inicio de vendimia": "Fines de ago.",
+    "Email de contacto": "caveau@domainedelacroix.com"
+  },
+  {
+    "Bodega (Weingut)": "Château d’Esclans",
+    "Ubicación": "La Motte (Var, Provenza)",
+    "Inicio de vendimia": "Fines de ago.",
+    "Email de contacto": "chateaudesclans@chateaudesclans.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Miraval",
+    "Ubicación": "Correns (Var, Provenza)",
+    "Inicio de vendimia": "Fines de ago.",
+    "Email de contacto": "contact@miraval-provence.com"
+  },
+  {
+    "Bodega (Weingut)": "Château Moulin-à-Vent",
+    "Ubicación": "Charentay (Ródano, Auvernia‑Ródano‑Alpes)",
+    "Inicio de vendimia": "Principios sep.",
+    "Email de contacto": "info@chateaudumoulinavent.com"
+  },
+  {
+    "Bodega (Weingut)": "– (otros similares en Borgoña, Loire, ...)",
+    "Ubicación": "...",
+    "Inicio de vendimia": "...",
+    "Email de contacto": "..."
+  },
+  {
+    "Bodega (Weingut)": "Brown Estate",
+    "Ubicación": "California",
+    "Inicio de vendimia": "hr@brownestate.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Bronco Wine Co.",
+    "Ubicación": "California",
+    "Inicio de vendimia": "hr-general@broncowine.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Regusci Vineyard Mgmt",
+    "Ubicación": "California",
+    "Inicio de vendimia": "careers@reguscivm.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Ledson Winery",
+    "Ubicación": "California",
+    "Inicio de vendimia": "info@ledson.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Siren Song Wines",
+    "Ubicación": "Washington",
+    "Inicio de vendimia": "info@sirensongwines.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Freehand Cellars",
+    "Ubicación": "Washington",
+    "Inicio de vendimia": "tyra@freehandcellars.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "The Wine Group",
+    "Ubicación": "California",
+    "Inicio de vendimia": "careers@thewinegroup.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Foley Family Wines",
+    "Ubicación": "California",
+    "Inicio de vendimia": "jobs@foleyfamilywines.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "O'Neill Vintners",
+    "Ubicación": "California",
+    "Inicio de vendimia": "hr@oneillwine.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Abreu Vineyards",
+    "Ubicación": "California",
+    "Inicio de vendimia": "brad@abreuvineyards.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Arrow & Branch",
+    "Ubicación": "California",
+    "Inicio de vendimia": "wine@arrowandbranch.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Bella Oaks",
+    "Ubicación": "California",
+    "Inicio de vendimia": "info@bellaoaks.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Brand Napa Valley",
+    "Ubicación": "California",
+    "Inicio de vendimia": "carey@brandnapavalley.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Bryant Estate",
+    "Ubicación": "California",
+    "Inicio de vendimia": "alyssia@bryantwines.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Chappellet Winery",
+    "Ubicación": "California",
+    "Inicio de vendimia": "peter@chappellet.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Cliff Lede Vineyards",
+    "Ubicación": "California",
+    "Inicio de vendimia": "info@ledefamilywines.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Cornell Vineyards",
+    "Ubicación": "California",
+    "Inicio de vendimia": "bailey@cornellvineyards.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Diamond Creek",
+    "Ubicación": "California",
+    "Inicio de vendimia": "Allie@diamondcreekvineyards.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Grace Family Vineyards",
+    "Ubicación": "California",
+    "Inicio de vendimia": "Brett@gracefamilyvineyards.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Keplinger Wines",
+    "Ubicación": "California",
+    "Inicio de vendimia": "dj@keplingerwines.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Kinsman Eades",
+    "Ubicación": "California",
+    "Inicio de vendimia": "shae@kinsmaneades.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Massican Winery",
+    "Ubicación": "California",
+    "Inicio de vendimia": "dan@massican.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Realm Cellars",
+    "Ubicación": "California",
+    "Inicio de vendimia": "Team@realmcellars.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Round Pond Estate",
+    "Ubicación": "California",
+    "Inicio de vendimia": "concierge@roundpond.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Staglin Family",
+    "Ubicación": "California",
+    "Inicio de vendimia": "info@staglinfamily.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Wiens Cellars",
+    "Ubicación": "California",
+    "Inicio de vendimia": "info@wienscellars.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Robert Mondavi",
+    "Ubicación": "California",
+    "Inicio de vendimia": "reservations@robertmondaviwinery.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Buena Vista Winery",
+    "Ubicación": "California",
+    "Inicio de vendimia": "customerservice@buenavistawinery.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Willamette Valley V.",
+    "Ubicación": "Oregón",
+    "Inicio de vendimia": "info@wvv.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Adelsheim Vineyard",
+    "Ubicación": "Oregón",
+    "Inicio de vendimia": "club@adelsheim.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Gianni Buonomo",
+    "Ubicación": "California",
+    "Inicio de vendimia": "info@gbvintners.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Gray Ghost Vineyards",
+    "Ubicación": "Virginia",
+    "Inicio de vendimia": "grayghostvineyards@gmail.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Adam Puchta Winery",
+    "Ubicación": "Missouri",
+    "Inicio de vendimia": "wayne@adampuchtawine.com",
+    "Email de contacto": ""
+  },
+  {
+    "Bodega (Weingut)": "Blind Horse Winery",
+    "Ubicación": "Wisconsin",
+    "Inicio de vendimia": "chris@moellerenterprises.com",
+    "Email de contacto": ""
+  }
+]
