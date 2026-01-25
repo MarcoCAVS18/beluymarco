@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Check, X, Edit3, Mail, Filter, Wine, Hotel, EyeOff, Eye, Loader2 } from 'lucide-react';
+import { Search, Check, X, Edit3, Mail, Filter, Wine, Hotel, EyeOff, Eye, Loader2, CheckSquare, Square } from 'lucide-react';
 import { useWineries, useHousekeeping, useConfig } from '../hooks/useFirebaseData';
 
 const TrackerView = () => {
@@ -15,6 +15,8 @@ const TrackerView = () => {
   const [selectedWinery, setSelectedWinery] = useState(null); // For Modal
   const [copiedEmail, setCopiedEmail] = useState(null);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
   // Get current dataset based on sector
   const currentData = sector === 'winery' ? wineries : housekeeping;
@@ -78,15 +80,60 @@ const TrackerView = () => {
     setTimeout(() => setCopiedEmail(null), 2000);
   };
 
-  // Copy all emails
+  // Copy all emails (or selected if in selection mode)
   const copyAllEmails = () => {
-    const emails = filteredWineries
-      .filter(w => w.email && w.email.trim() !== '')
-      .map(w => w.email)
-      .join(', ');
-    navigator.clipboard.writeText(emails);
+    let emailsToCopy;
+
+    if (isSelecting && selectedIds.size > 0) {
+      // Copy only selected emails
+      emailsToCopy = filteredWineries
+        .filter(w => selectedIds.has(w.id) && w.email && w.email.trim() !== '')
+        .map(w => w.email)
+        .join(', ');
+    } else {
+      // Copy all filtered emails
+      emailsToCopy = filteredWineries
+        .filter(w => w.email && w.email.trim() !== '')
+        .map(w => w.email)
+        .join(', ');
+    }
+
+    navigator.clipboard.writeText(emailsToCopy);
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2000);
+  };
+
+  // Toggle selection mode
+  const toggleSelectionMode = () => {
+    if (isSelecting) {
+      // Exiting selection mode - clear selections
+      setSelectedIds(new Set());
+    }
+    setIsSelecting(!isSelecting);
+  };
+
+  // Toggle individual selection
+  const toggleSelection = (id) => {
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  // Select all visible
+  const selectAllVisible = () => {
+    const allVisibleIds = filteredWineries.map(w => w.id);
+    setSelectedIds(new Set(allVisibleIds));
+  };
+
+  // Clear all selections
+  const clearAllSelections = () => {
+    setSelectedIds(new Set());
   };
 
   if (loading) {
@@ -107,6 +154,8 @@ const TrackerView = () => {
               setSector('winery');
               setSelectedCountries([]);
               setSearch("");
+              setSelectedIds(new Set());
+              setIsSelecting(false);
             }}
             className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all ${sector === 'winery' ? 'bg-dark-surface text-white shadow-sm' : 'text-dark-subtext hover:text-white'}`}
           >
@@ -118,6 +167,8 @@ const TrackerView = () => {
               setSector('housekeeping');
               setSelectedCountries([]);
               setSearch("");
+              setSelectedIds(new Set());
+              setIsSelecting(false);
             }}
             className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all ${sector === 'housekeeping' ? 'bg-dark-surface text-white shadow-sm' : 'text-dark-subtext hover:text-white'}`}
           >
@@ -149,6 +200,17 @@ const TrackerView = () => {
               />
             </div>
             <button
+              onClick={toggleSelectionMode}
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 hover:scale-105 whitespace-nowrap ${
+                isSelecting
+                  ? 'bg-purple-600 text-white hover:bg-purple-500'
+                  : 'bg-dark-surface border border-dark-hover text-dark-text hover:border-accent'
+              }`}
+            >
+              <CheckSquare size={16} />
+              {isSelecting ? 'Cancel' : 'Select'}
+            </button>
+            <button
               onClick={copyAllEmails}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-accent text-black rounded-full text-sm font-medium hover:bg-accent/90 transition-all duration-200 hover:scale-105 whitespace-nowrap"
             >
@@ -156,6 +218,11 @@ const TrackerView = () => {
                 <>
                   <Check size={16} className="animate-bounce" />
                   Copied!
+                </>
+              ) : isSelecting && selectedIds.size > 0 ? (
+                <>
+                  <Mail size={16} />
+                  Copy Selected ({selectedIds.size})
                 </>
               ) : (
                 <>
@@ -213,12 +280,58 @@ const TrackerView = () => {
         </div>
       </div>
 
+      {/* Selection Info Bar */}
+      {isSelecting && (
+        <div className="flex items-center justify-between bg-purple-900/30 border border-purple-500/30 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-3">
+            <CheckSquare size={18} className="text-purple-400" />
+            <span className="text-sm">
+              <span className="font-semibold text-purple-300">{selectedIds.size}</span>
+              <span className="text-dark-subtext"> of {filteredWineries.length} selected</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={selectAllVisible}
+              className="text-xs px-3 py-1.5 bg-purple-600/50 hover:bg-purple-600 text-white rounded-full transition-colors"
+            >
+              Select All
+            </button>
+            {selectedIds.size > 0 && (
+              <button
+                onClick={clearAllSelections}
+                className="text-xs px-3 py-1.5 bg-dark-surface hover:bg-dark-hover text-dark-text rounded-full transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Table / List */}
       <div className="bg-dark-sidebar rounded-2xl overflow-hidden border border-dark-hover shadow-lg">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-dark-surface text-dark-subtext text-xs uppercase tracking-wider border-b border-dark-hover">
+                {isSelecting && (
+                  <th className="p-4 w-12">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={selectedIds.size === filteredWineries.length ? clearAllSelections : selectAllVisible}
+                        className="p-1 hover:bg-dark-hover rounded transition-colors"
+                        title={selectedIds.size === filteredWineries.length ? "Deselect all" : "Select all"}
+                      >
+                        {selectedIds.size === filteredWineries.length ? (
+                          <CheckSquare size={18} className="text-accent" />
+                        ) : (
+                          <Square size={18} />
+                        )}
+                      </button>
+                    </div>
+                  </th>
+                )}
                 <th className="p-4">Country</th>
                 <th className="p-4">{sector === 'winery' ? 'Winery Name' : 'Hotel/Resort'}</th>
                 <th className="p-4">Email</th>
@@ -228,7 +341,31 @@ const TrackerView = () => {
             </thead>
             <tbody className="divide-y divide-dark-hover">
               {filteredWineries.map((winery) => (
-                <tr key={winery.id} className="hover:bg-dark-hover/50 transition-colors group">
+                <tr
+                  key={winery.id}
+                  className={`hover:bg-dark-hover/50 transition-colors group ${
+                    isSelecting && selectedIds.has(winery.id) ? 'bg-accent/10' : ''
+                  }`}
+                  onClick={isSelecting ? () => toggleSelection(winery.id) : undefined}
+                  style={isSelecting ? { cursor: 'pointer' } : undefined}
+                >
+                  {isSelecting && (
+                    <td className="p-4">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSelection(winery.id);
+                        }}
+                        className="p-1 hover:bg-dark-surface rounded transition-colors"
+                      >
+                        {selectedIds.has(winery.id) ? (
+                          <CheckSquare size={18} className="text-accent" />
+                        ) : (
+                          <Square size={18} className="text-dark-subtext" />
+                        )}
+                      </button>
+                    </td>
+                  )}
                   <td className="p-4 text-2xl">{flags[winery.country] || "🏳️"}</td>
                   <td className="p-4 font-medium">{winery.name}</td>
                   <td className="p-4">

@@ -57,6 +57,11 @@ export const getConfig = async () => {
   return configDoc.exists() ? configDoc.data() : null;
 };
 
+export const getCoverLetters = async () => {
+  const config = await getConfig();
+  return config?.coverLetters || {};
+};
+
 export const getFlags = async () => {
   const config = await getConfig();
   return config?.flags || {};

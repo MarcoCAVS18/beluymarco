@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, FileDown, Wine, Hotel, Edit3, Save, X, File, Loader2 } from 'lucide-react';
+import { Copy, Check, FileDown, Wine, Hotel, Edit3, Save, X, File, Loader2, FileText } from 'lucide-react';
 import { useTemplates, useConfig } from '../hooks/useFirebaseData';
 
-const CopyBlock = ({ title, text, onTextChange }) => {
+const CopyBlock = ({ title, text, onTextChange, downloadPath }) => {
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState(text);
   const [saving, setSaving] = useState(false);
 
-  // Update local state when text prop changes
   useEffect(() => {
     setEditedText(text);
   }, [text]);
@@ -63,6 +62,19 @@ const CopyBlock = ({ title, text, onTextChange }) => {
             </>
           ) : (
             <>
+              {/* Botón PDF solo si existe la ruta */}
+              {downloadPath && (
+                <a
+                  href={downloadPath}
+                  download
+                  className="flex items-center gap-1.5 text-xs font-medium bg-purple-900/40 text-purple-200 hover:bg-purple-900/60 px-3 py-1.5 rounded-full transition-all duration-200 hover:scale-105 border border-purple-500/30"
+                  title="Download PDF Version"
+                >
+                  <FileText size={14} />
+                  PDF
+                </a>
+              )}
+
               <button
                 onClick={() => setIsEditing(true)}
                 className="flex items-center gap-1.5 text-xs font-medium bg-dark-surface hover:bg-dark-hover px-3 py-1.5 rounded-full transition-all duration-200 hover:scale-105"
@@ -107,15 +119,16 @@ const CopyBlock = ({ title, text, onTextChange }) => {
 };
 
 const ResourcesView = () => {
-  const [sector, setSector] = useState('winery'); // 'winery' or 'housekeeping'
+  const [sector, setSector] = useState('winery');
   
-  // Firebase Hooks
+  // Obtenemos coverLetters desde useConfig
   const { templates, loading: templatesLoading, updateTemplate } = useTemplates();
-  
-  // Importamos resumes y otherDocuments desde useConfig (Base de Datos)
-  const { resumes = [], otherDocuments = [], loading: configLoading } = useConfig();
+  const { resumes = [], otherDocuments = [], coverLetters = {}, loading: configLoading } = useConfig();
 
   const loading = templatesLoading || configLoading;
+
+  // Seleccionamos la ruta según el sector
+  const currentCoverLetterPath = coverLetters[sector] || '';
 
   const handleEmailChange = async (newText) => {
     await updateTemplate(sector, 'email', newText);
@@ -135,7 +148,6 @@ const ResourcesView = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-
       {/* Toggles */}
       <div className="flex justify-center mb-8">
         <div className="bg-dark-sidebar p-1 rounded-full border border-dark-hover inline-flex">
@@ -158,7 +170,6 @@ const ResourcesView = () => {
 
       {/* Download Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Filtramos usando los datos de la DB en lugar de las constantes */}
         {resumes.filter(r => r.type.toLowerCase() === sector).map((resume) => (
           <div key={resume.id} className="bg-dark-surface border border-dark-hover p-4 rounded-xl flex justify-between items-center group hover:border-accent transition-all duration-200 hover:shadow-lg hover:shadow-accent/10">
             <div>
@@ -184,7 +195,7 @@ const ResourcesView = () => {
         <h3 className="text-xl font-semibold mb-4">Email Body (Copy & Paste)</h3>
         <CopyBlock
           title="Short & Direct Email Template"
-          text={templates[sector]?.email || ''} // Acceso seguro por si está vacío
+          text={templates[sector]?.email || ''}
           onTextChange={handleEmailChange}
         />
       </div>
@@ -195,6 +206,7 @@ const ResourcesView = () => {
           title="Cover Letter Content"
           text={templates[sector]?.coverLetter || ''}
           onTextChange={handleCoverLetterChange}
+          downloadPath={currentCoverLetterPath} // Pasamos la ruta dinámica aquí
         />
       </div>
 

@@ -9,7 +9,8 @@ import {
   getFlags,
   getStatusOptions,
   getResumes,
-  getOtherDocuments
+  getOtherDocuments,
+  getCoverLetters
 } from '../firebase/services';
 
 export const useWineries = () => {
@@ -143,6 +144,7 @@ export const useConfig = () => {
   const [flags, setFlags] = useState({});
   const [statusOptions, setStatusOptions] = useState([]);
   const [resumes, setResumes] = useState([]);
+  const [coverLetters, setCoverLetters] = useState({});
   const [otherDocuments, setOtherDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -154,16 +156,18 @@ export const useConfig = () => {
   const loadConfig = async () => {
     try {
       setLoading(true);
-      const [flagsData, statusData, resumesData, docsData] = await Promise.all([
+      const [flagsData, statusData, resumesData, docsData, coverLettersData] = await Promise.all([
         getFlags(),
         getStatusOptions(),
         getResumes(),
-        getOtherDocuments()
+        getOtherDocuments(),
+        getCoverLetters()
       ]);
       setFlags(flagsData);
       setStatusOptions(statusData);
       setResumes(resumesData);
       setOtherDocuments(docsData);
+      setCoverLetters(coverLettersData);
       setError(null);
     } catch (err) {
       console.error('Error loading config:', err);
@@ -173,5 +177,5 @@ export const useConfig = () => {
     }
   };
 
-  return { flags, statusOptions, resumes, otherDocuments, loading, error };
+  return { flags, statusOptions, resumes, otherDocuments, coverLetters, loading, error };
 };
