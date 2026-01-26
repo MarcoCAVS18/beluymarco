@@ -1,9 +1,14 @@
 import { useCallback } from 'react';
 
 export const useExportCSV = () => {
-  const exportToCSV = useCallback((data, statusOptions, sector) => {
+  const exportToCSV = useCallback((data, statusOptions, sector, selectedStatus = null) => {
+    // Filter status options if a specific status is selected
+    const statusesToExport = selectedStatus
+      ? statusOptions.filter(s => s.label === selectedStatus)
+      : statusOptions;
+
     // Group data by status
-    const groupedByStatus = statusOptions.reduce((acc, status) => {
+    const groupedByStatus = statusesToExport.reduce((acc, status) => {
       acc[status.label] = data.filter(item => item.status === status.label && !item.hidden);
       return acc;
     }, {});
@@ -26,7 +31,7 @@ export const useExportCSV = () => {
     // Build CSV content
     let csvContent = '';
 
-    statusOptions.forEach((status) => {
+    statusesToExport.forEach((status) => {
       const items = groupedByStatus[status.label] || [];
 
       // Add status section header
@@ -61,9 +66,10 @@ export const useExportCSV = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     const timestamp = new Date().toISOString().split('T')[0];
+    const statusSuffix = selectedStatus ? `-${selectedStatus.toLowerCase()}` : '';
 
     link.href = url;
-    link.download = `${sector}-tracker-${timestamp}.csv`;
+    link.download = `${sector}-tracker${statusSuffix}-${timestamp}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

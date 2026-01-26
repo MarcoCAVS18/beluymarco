@@ -21,6 +21,8 @@ const TrackerView = () => {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkEditMode, setBulkEditMode] = useState(false); // true when editing multiple
   const [editNotes, setEditNotes] = useState(''); // For tracking notes in edit modal
+  const [editEmail, setEditEmail] = useState(''); // For tracking email in edit modal
+  const [selectedStatus, setSelectedStatus] = useState(null); // For filtering by status
 
   // Get current dataset based on sector
   const currentData = sector === 'winery' ? wineries : housekeeping;
@@ -92,8 +94,9 @@ const TrackerView = () => {
     const matchesSearch = w.name.toLowerCase().includes(search.toLowerCase()) ||
       w.country.toLowerCase().includes(search.toLowerCase());
     const matchesCountry = selectedCountries.length === 0 || selectedCountries.includes(w.country);
+    const matchesStatus = !selectedStatus || w.status === selectedStatus;
     const isNotHidden = showHidden || !w.hidden;
-    return matchesSearch && matchesCountry && isNotHidden;
+    return matchesSearch && matchesCountry && matchesStatus && isNotHidden;
   });
 
   const hiddenCount = currentData.filter(w => w.hidden).length;
@@ -181,22 +184,35 @@ const TrackerView = () => {
       setBulkEditMode(false);
       setSelectedWinery(winery);
       setEditNotes(winery.notes || ''); // Initialize notes state
+      setEditEmail(winery.email || ''); // Initialize email state
     }
   };
 
-  // Close modal and save notes
+  // Close modal and save notes/email
   const closeModal = async () => {
-    // Save notes if in single edit mode and notes changed
-    if (!bulkEditMode && selectedWinery && editNotes !== (selectedWinery.notes || '')) {
-      try {
-        await updateCurrentData(selectedWinery.id, { notes: editNotes });
-      } catch (error) {
-        console.error('Error saving notes:', error);
+    if (!bulkEditMode && selectedWinery) {
+      const updates = {};
+      // Save notes if changed
+      if (editNotes !== (selectedWinery.notes || '')) {
+        updates.notes = editNotes;
+      }
+      // Save email if changed
+      if (editEmail !== (selectedWinery.email || '')) {
+        updates.email = editEmail;
+      }
+      // Apply updates if any
+      if (Object.keys(updates).length > 0) {
+        try {
+          await updateCurrentData(selectedWinery.id, updates);
+        } catch (error) {
+          console.error('Error saving changes:', error);
+        }
       }
     }
 
     setSelectedWinery(null);
     setEditNotes('');
+    setEditEmail('');
     if (bulkEditMode) {
       setBulkEditMode(false);
       setSelectedIds(new Set());
@@ -224,6 +240,7 @@ const TrackerView = () => {
               setSearch("");
               setSelectedIds(new Set());
               setIsSelecting(false);
+              setSelectedStatus(null);
             }}
             className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all ${sector === 'winery' ? 'bg-dark-surface text-white shadow-sm' : 'text-dark-subtext hover:text-white'}`}
           >
@@ -237,6 +254,7 @@ const TrackerView = () => {
               setSearch("");
               setSelectedIds(new Set());
               setIsSelecting(false);
+              setSelectedStatus(null);
             }}
             className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all ${sector === 'housekeeping' ? 'bg-dark-surface text-white shadow-sm' : 'text-dark-subtext hover:text-white'}`}
           >
@@ -493,16 +511,24 @@ const TrackerView = () => {
         {/* Status Legend */}
         <div className="px-4 py-3 border-t border-dark-hover bg-dark-bg/30">
           <div className="flex items-center justify-between">
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-dark-subtext">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
               {statusOptions.map((status) => (
-                <span key={status.label} className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full ${status.color}`}></span>
+                <button
+                  key={status.label}
+                  onClick={() => setSelectedStatus(selectedStatus === status.label ? null : status.label)}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-full transition-all ${
+                    selectedStatus === status.label
+                      ? `${status.color} text-white`
+                      : 'text-dark-subtext hover:text-dark-text hover:bg-dark-hover'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${selectedStatus === status.label ? 'bg-white' : status.color}`}></span>
                   <span>{statusCounts[status.label] || 0} {status.label.toLowerCase()}</span>
-                </span>
+                </button>
               ))}
             </div>
             <button
-              onClick={() => exportToCSV(currentData, statusOptions, sector)}
+              onClick={() => exportToCSV(currentData, statusOptions, sector, selectedStatus)}
               className="p-1.5 text-dark-subtext hover:text-accent transition-colors"
               title="Download CSV"
             >
@@ -561,7 +587,13 @@ const TrackerView = () => {
                     <h3 className="text-xl font-bold flex items-center gap-2">
                       {flags[selectedWinery.country]} {selectedWinery.name}
                     </h3>
-                    <p className="text-dark-subtext text-sm mt-1">{selectedWinery.email}</p>
+                    <input
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      className="text-dark-subtext text-sm mt-1 bg-transparent border-b border-transparent hover:border-dark-hover focus:border-accent outline-none w-full"
+                      placeholder="Enter email..."
+                    />
                   </>
                 )}
               </div>
