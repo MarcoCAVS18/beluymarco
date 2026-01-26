@@ -1,12 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Check, X, Edit3, Mail, Filter, Wine, Hotel, EyeOff, Eye, Loader2, CheckSquare, Square } from 'lucide-react';
+import { Search, Check, X, Edit3, Mail, Filter, Wine, Hotel, EyeOff, Eye, Loader2, CheckSquare, Square, Download } from 'lucide-react';
 import { useWineries, useHousekeeping, useConfig } from '../hooks/useFirebaseData';
+import { useExportCSV } from '../hooks/useExportCSV';
 
 const TrackerView = () => {
   const [sector, setSector] = useState('winery'); // 'winery' or 'housekeeping'
   const { wineries, loading: wineriesLoading, updateWinery } = useWineries();
   const { housekeeping, loading: housekeepingLoading, updateHousekeeping } = useHousekeeping();
   const { flags = {}, statusOptions = [], loading: configLoading } = useConfig();
+  const { exportToCSV } = useExportCSV();
 
   const [showHidden, setShowHidden] = useState(false);
   const [search, setSearch] = useState("");
@@ -490,13 +492,22 @@ const TrackerView = () => {
 
         {/* Status Legend */}
         <div className="px-4 py-3 border-t border-dark-hover bg-dark-bg/30">
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-dark-subtext">
-            {statusOptions.map((status) => (
-              <span key={status.label} className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${status.color}`}></span>
-                <span>{statusCounts[status.label] || 0} {status.label.toLowerCase()}</span>
-              </span>
-            ))}
+          <div className="flex items-center justify-between">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-dark-subtext">
+              {statusOptions.map((status) => (
+                <span key={status.label} className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${status.color}`}></span>
+                  <span>{statusCounts[status.label] || 0} {status.label.toLowerCase()}</span>
+                </span>
+              ))}
+            </div>
+            <button
+              onClick={() => exportToCSV(currentData, statusOptions, sector)}
+              className="p-1.5 text-dark-subtext hover:text-accent transition-colors"
+              title="Download CSV"
+            >
+              <Download size={16} />
+            </button>
           </div>
         </div>
 
