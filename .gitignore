@@ -26,6 +26,14 @@ dist-ssr
 
 # Firebase
 .firebase/
+.firebaserc
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# Claude Code
+.claude/
+
+# Data files (raw imports)
+csvjson.json
+housekeeping.json

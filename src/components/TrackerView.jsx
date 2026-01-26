@@ -18,6 +18,7 @@ const TrackerView = () => {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [bulkEditMode, setBulkEditMode] = useState(false); // true when editing multiple
+  const [editNotes, setEditNotes] = useState(''); // For tracking notes in edit modal
 
   // Get current dataset based on sector
   const currentData = sector === 'winery' ? wineries : housekeeping;
@@ -177,12 +178,23 @@ const TrackerView = () => {
       // Single edit mode
       setBulkEditMode(false);
       setSelectedWinery(winery);
+      setEditNotes(winery.notes || ''); // Initialize notes state
     }
   };
 
-  // Close modal
-  const closeModal = () => {
+  // Close modal and save notes
+  const closeModal = async () => {
+    // Save notes if in single edit mode and notes changed
+    if (!bulkEditMode && selectedWinery && editNotes !== (selectedWinery.notes || '')) {
+      try {
+        await updateCurrentData(selectedWinery.id, { notes: editNotes });
+      } catch (error) {
+        console.error('Error saving notes:', error);
+      }
+    }
+
     setSelectedWinery(null);
+    setEditNotes('');
     if (bulkEditMode) {
       setBulkEditMode(false);
       setSelectedIds(new Set());
@@ -578,7 +590,8 @@ const TrackerView = () => {
                   <textarea
                     className="w-full mt-2 bg-dark-bg rounded-xl p-3 text-sm border border-dark-hover focus:border-accent outline-none min-h-[100px]"
                     placeholder="Did they reply? What did they say?"
-                    defaultValue={selectedWinery.notes}
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
                   />
                 </div>
               )}
