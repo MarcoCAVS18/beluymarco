@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Check, X, Edit3, Mail, Filter, Wine, Hotel, EyeOff, Eye, Loader2, CheckSquare, Square, Download, Plus } from 'lucide-react';
+import { Search, Check, X, Edit3, Mail, Filter, EyeOff, Eye, Loader2, CheckSquare, Square, Download } from 'lucide-react';
 import { useWineries, useHousekeeping, useConfig } from '../hooks/useFirebaseData';
 import { useExportCSV } from '../hooks/useExportCSV';
 import CountryFlag from './CountryFlag';
+import CountrySelect from './CountrySelect';
 import CreateCompanyModal from './CreateCompanyModal';
+import SectorToggle from './SectorToggle';
 
 const TrackerView = () => {
   const [sector, setSector] = useState('winery'); // 'winery' or 'housekeeping'
@@ -24,6 +26,10 @@ const TrackerView = () => {
   const [bulkEditMode, setBulkEditMode] = useState(false); // true when editing multiple
   const [editNotes, setEditNotes] = useState(''); // For tracking notes in edit modal
   const [editEmail, setEditEmail] = useState(''); // For tracking email in edit modal
+  const [editName, setEditName] = useState(''); // For tracking name in edit modal
+  const [editLocation, setEditLocation] = useState(''); // For tracking location in edit modal
+  const [editCountry, setEditCountry] = useState(''); // For tracking country in edit modal
+  const [editHarvestSeason, setEditHarvestSeason] = useState(''); // For tracking harvest/season in edit modal
   const [selectedStatus, setSelectedStatus] = useState(null); // For filtering by status
   const [showCreateModal, setShowCreateModal] = useState(false); // For create modal
 
@@ -186,22 +192,43 @@ const TrackerView = () => {
       // Single edit mode
       setBulkEditMode(false);
       setSelectedWinery(winery);
-      setEditNotes(winery.notes || ''); // Initialize notes state
-      setEditEmail(winery.email || ''); // Initialize email state
+      setEditName(winery.name || '');
+      setEditEmail(winery.email || '');
+      setEditLocation(winery.location || '');
+      setEditCountry(winery.country || 'NZ');
+      setEditHarvestSeason(sector === 'winery' ? (winery.harvestStart || '') : (winery.season || ''));
+      setEditNotes(winery.notes || '');
     }
   };
 
-  // Close modal and save notes/email
+  // Close modal and save all fields
   const closeModal = async () => {
     if (!bulkEditMode && selectedWinery) {
       const updates = {};
-      // Save notes if changed
-      if (editNotes !== (selectedWinery.notes || '')) {
-        updates.notes = editNotes;
+      // Save all changed fields
+      if (editName !== (selectedWinery.name || '')) {
+        updates.name = editName;
       }
-      // Save email if changed
       if (editEmail !== (selectedWinery.email || '')) {
         updates.email = editEmail;
+      }
+      if (editLocation !== (selectedWinery.location || '')) {
+        updates.location = editLocation;
+      }
+      if (editCountry !== (selectedWinery.country || '')) {
+        updates.country = editCountry;
+      }
+      // Handle harvest/season based on sector
+      const currentHarvestSeason = sector === 'winery' ? (selectedWinery.harvestStart || '') : (selectedWinery.season || '');
+      if (editHarvestSeason !== currentHarvestSeason) {
+        if (sector === 'winery') {
+          updates.harvestStart = editHarvestSeason;
+        } else {
+          updates.season = editHarvestSeason;
+        }
+      }
+      if (editNotes !== (selectedWinery.notes || '')) {
+        updates.notes = editNotes;
       }
       // Apply updates if any
       if (Object.keys(updates).length > 0) {
@@ -214,8 +241,12 @@ const TrackerView = () => {
     }
 
     setSelectedWinery(null);
-    setEditNotes('');
+    setEditName('');
     setEditEmail('');
+    setEditLocation('');
+    setEditCountry('');
+    setEditHarvestSeason('');
+    setEditNotes('');
     if (bulkEditMode) {
       setBulkEditMode(false);
       setSelectedIds(new Set());
@@ -234,45 +265,18 @@ const TrackerView = () => {
   return (
     <div className="space-y-6">
       {/* Sector Toggle */}
-      <div className="flex justify-center">
-        <div className="bg-dark-sidebar p-1 rounded-full border border-dark-hover inline-flex">
-          <button
-            onClick={() => {
-              setSector('winery');
-              setSelectedCountries([]);
-              setSearch("");
-              setSelectedIds(new Set());
-              setIsSelecting(false);
-              setSelectedStatus(null);
-            }}
-            className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all ${sector === 'winery' ? 'bg-dark-surface text-white shadow-sm' : 'text-dark-subtext hover:text-white'}`}
-          >
-            <Wine size={16} />
-            Wineries
-          </button>
-          <button
-            onClick={() => {
-              setSector('housekeeping');
-              setSelectedCountries([]);
-              setSearch("");
-              setSelectedIds(new Set());
-              setIsSelecting(false);
-              setSelectedStatus(null);
-            }}
-            className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all ${sector === 'housekeeping' ? 'bg-dark-surface text-white shadow-sm' : 'text-dark-subtext hover:text-white'}`}
-          >
-            <Hotel size={16} />
-            Housekeeping
-          </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all bg-accent text-black hover:bg-accent/90"
-          >
-            <Plus size={16} />
-            Add New
-          </button>
-        </div>
-      </div>
+      <SectorToggle
+        sector={sector}
+        onSectorChange={(newSector) => {
+          setSector(newSector);
+          setSelectedCountries([]);
+          setSearch("");
+          setSelectedIds(new Set());
+          setIsSelecting(false);
+          setSelectedStatus(null);
+        }}
+        onAddNew={() => setShowCreateModal(true)}
+      />
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -573,89 +577,166 @@ const TrackerView = () => {
       {/* Edit Modal (single and bulk) */}
       {selectedWinery && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-dark-sidebar w-full max-w-md rounded-2xl border border-dark-hover shadow-2xl p-6">
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex-1 min-w-0">
+          <div className="bg-dark-sidebar w-full max-w-md rounded-2xl border border-dark-hover shadow-2xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex justify-between items-center p-6 border-b border-dark-hover sticky top-0 bg-dark-sidebar">
+              <h3 className="text-xl font-bold">
                 {bulkEditMode && selectedItems.length > 0 ? (
-                  <>
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                      <CheckSquare size={20} className="text-purple-400" />
-                      Editing {selectedItems.length} items
-                    </h3>
-                    <div className="mt-2 max-h-20 overflow-y-auto">
-                      <div className="flex flex-wrap gap-1">
-                        {selectedItems.map((item) => (
-                          <span key={item.id} className="text-dark-subtext text-xs bg-dark-surface px-2 py-1 rounded-full flex items-center gap-1">
-                            <CountryFlag code={item.country} size="sm" /> {item.name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </>
+                  <span className="flex items-center gap-2">
+                    <CheckSquare size={20} className="text-purple-400" />
+                    Editing {selectedItems.length} items
+                  </span>
                 ) : (
-                  <>
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                      <CountryFlag code={selectedWinery.country} size="lg" /> {selectedWinery.name}
-                    </h3>
-                    <input
-                      type="email"
-                      value={editEmail}
-                      onChange={(e) => setEditEmail(e.target.value)}
-                      className="text-dark-subtext text-sm mt-1 bg-transparent border-b border-transparent hover:border-dark-hover focus:border-accent outline-none w-full"
-                      placeholder="Enter email..."
-                    />
-                  </>
+                  'Edit Company'
                 )}
-              </div>
-              <button onClick={closeModal} className="p-1 hover:bg-dark-surface rounded-full flex-shrink-0">
+              </h3>
+              <button onClick={closeModal} className="p-1 hover:bg-dark-surface rounded-full">
                 <X size={20} />
               </button>
             </div>
 
-            <div className="space-y-4">
-              <label className="text-sm font-medium text-dark-subtext uppercase">
-                {bulkEditMode ? `Update Status for All ${selectedItems.length} Items` : 'Update Status'}
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                {statusOptions.map((status) => {
-                  const isActive = bulkEditMode
-                    ? selectedItems.every(item => item.status === status.label)
-                    : selectedWinery.status === status.label;
-                  return (
-                    <button
-                      key={status.label}
-                      onClick={() => handleStatusChange(selectedWinery.id, status.label)}
-                      className={`p-2 rounded-lg text-sm border transition-all ${
-                        isActive
-                        ? `${status.color} border-transparent text-white`
-                        : 'border-dark-hover bg-dark-surface hover:border-dark-subtext'
-                      }`}
-                    >
-                      {status.label}
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="p-6 space-y-4">
+              {bulkEditMode && selectedItems.length > 0 ? (
+                <>
+                  {/* Bulk edit: show selected items */}
+                  <div className="max-h-20 overflow-y-auto mb-4">
+                    <div className="flex flex-wrap gap-1">
+                      {selectedItems.map((item) => (
+                        <span key={item.id} className="text-dark-subtext text-xs bg-dark-surface px-2 py-1 rounded-full flex items-center gap-1">
+                          <CountryFlag code={item.country} size="sm" /> {item.name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
 
-              {!bulkEditMode && (
-                <div className="mt-4">
-                  <label className="text-sm font-medium text-dark-subtext uppercase">Notes</label>
-                  <textarea
-                    className="w-full mt-2 bg-dark-bg rounded-xl p-3 text-sm border border-dark-hover focus:border-accent outline-none min-h-[100px]"
-                    placeholder="Did they reply? What did they say?"
-                    value={editNotes}
-                    onChange={(e) => setEditNotes(e.target.value)}
-                  />
-                </div>
+                  {/* Bulk edit: only status */}
+                  <div>
+                    <label className="block text-sm font-medium text-dark-subtext mb-2 uppercase">
+                      Update Status for All {selectedItems.length} Items
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {statusOptions.map((status) => {
+                        const isActive = selectedItems.every(item => item.status === status.label);
+                        return (
+                          <button
+                            key={status.label}
+                            onClick={() => handleStatusChange(selectedWinery.id, status.label)}
+                            className={`p-2 rounded-lg text-sm border transition-all ${
+                              isActive
+                              ? `${status.color} border-transparent text-white`
+                              : 'border-dark-hover bg-dark-surface hover:border-dark-subtext'
+                            }`}
+                          >
+                            {status.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Single edit: all fields */}
+                  {/* Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-dark-subtext mb-1.5">Name</label>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors"
+                    />
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-dark-subtext mb-1.5">Email</label>
+                    <input
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      placeholder="contact@example.com"
+                      className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors"
+                    />
+                  </div>
+
+                  {/* Location */}
+                  <div>
+                    <label className="block text-sm font-medium text-dark-subtext mb-1.5">Location</label>
+                    <input
+                      type="text"
+                      value={editLocation}
+                      onChange={(e) => setEditLocation(e.target.value)}
+                      placeholder="City, Region"
+                      className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors"
+                    />
+                  </div>
+
+                  {/* Country */}
+                  <div>
+                    <label className="block text-sm font-medium text-dark-subtext mb-1.5">Country</label>
+                    <CountrySelect
+                      value={editCountry}
+                      onChange={setEditCountry}
+                    />
+                  </div>
+
+                  {/* Harvest Start / Season */}
+                  <div>
+                    <label className="block text-sm font-medium text-dark-subtext mb-1.5">
+                      {sector === 'winery' ? 'Harvest Start' : 'Season'}
+                    </label>
+                    <input
+                      type="text"
+                      value={editHarvestSeason}
+                      onChange={(e) => setEditHarvestSeason(e.target.value)}
+                      placeholder={sector === 'winery' ? 'e.g. "finales de agosto"' : 'e.g. "Winter 2026"'}
+                      className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors"
+                    />
+                  </div>
+
+                  {/* Status */}
+                  <div>
+                    <label className="block text-sm font-medium text-dark-subtext mb-1.5">Status</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {statusOptions.map((status) => (
+                        <button
+                          key={status.label}
+                          onClick={() => handleStatusChange(selectedWinery.id, status.label)}
+                          className={`p-2 rounded-lg text-xs font-medium border transition-all ${
+                            selectedWinery.status === status.label
+                            ? `${status.color} border-transparent text-white`
+                            : 'border-dark-hover bg-dark-surface hover:border-dark-subtext'
+                          }`}
+                        >
+                          {status.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  <div>
+                    <label className="block text-sm font-medium text-dark-subtext mb-1.5">Notes</label>
+                    <textarea
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      placeholder="Did they reply? What did they say?"
+                      rows={3}
+                      className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors resize-none"
+                    />
+                  </div>
+                </>
               )}
             </div>
 
-            <div className="mt-6 flex justify-end">
+            {/* Footer */}
+            <div className="flex justify-end gap-3 p-6 border-t border-dark-hover">
               <button
                 onClick={closeModal}
-                className="px-4 py-2 bg-dark-text text-dark-bg font-semibold rounded-full hover:bg-white transition-colors"
+                className="px-4 py-2 bg-accent text-black font-semibold rounded-full hover:bg-accent/90 transition-colors"
               >
-                Done
+                Save & Close
               </button>
             </div>
           </div>

@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Briefcase } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import ResourcesView from './components/ResourcesView';
 import TrackerView from './components/TrackerView';
+import MapView from './components/MapView';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('tracker'); // 'tracker' or 'resources'
+  const [activeTab, setActiveTab] = useState('tracker'); // 'tracker', 'map', or 'resources'
 
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-dark-bg text-dark-text font-sans selection:bg-accent selection:text-black overflow-hidden">
@@ -29,7 +30,9 @@ function App() {
         {/* Scrollable Area */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 lg:pb-8">
           <div className="max-w-7xl mx-auto">
-            {activeTab === 'tracker' ? <TrackerView /> : <ResourcesView />}
+            {activeTab === 'tracker' && <TrackerView />}
+            {activeTab === 'map' && <MapView />}
+            {activeTab === 'resources' && <ResourcesView />}
           </div>
         </div>
       </main>

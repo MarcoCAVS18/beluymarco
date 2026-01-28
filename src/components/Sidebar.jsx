@@ -1,10 +1,10 @@
-import React from 'react';
-import { LayoutList, FileText } from 'lucide-react';
+import { LayoutList, FileText, Map } from 'lucide-react';
 import clsx from 'clsx';
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
   const menuItems = [
     { id: 'tracker', label: 'Tracker', icon: LayoutList },
+    { id: 'map', label: 'Map', icon: Map },
     { id: 'resources', label: 'Resources', icon: FileText },
   ];
 
@@ -58,15 +58,24 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
             <span className="text-xs font-medium">Tracker</span>
           </button>
 
-          {/* Center Avatar */}
-          <div className="flex flex-col items-center justify-center">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center font-bold text-white shadow-lg text-sm">
-              MB
+          {/* Center Map Button */}
+          <button
+            onClick={() => setActiveTab('map')}
+            className="flex flex-col items-center justify-center"
+          >
+            <div className={clsx(
+              "w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-200",
+              activeTab === 'map'
+                ? "bg-accent text-black"
+                : "bg-gradient-to-tr from-blue-500 to-purple-500 text-white"
+            )}>
+              <Map size={24} />
             </div>
-            <div className="flex flex-col items-center mt-1">
-              <span className="text-[10px] font-medium text-dark-text">Marco & Belu</span>
-            </div>
-          </div>
+            <span className={clsx(
+              "text-[10px] font-medium mt-1",
+              activeTab === 'map' ? "text-accent" : "text-dark-text"
+            )}>Map</span>
+          </button>
 
           {/* Resources Button */}
           <button
