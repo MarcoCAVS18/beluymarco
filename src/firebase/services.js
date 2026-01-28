@@ -7,7 +7,8 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  orderBy
+  orderBy,
+  Timestamp
 } from "firebase/firestore";
 import { db } from "./config";
 
@@ -23,6 +24,24 @@ export const updateWinery = async (id, data) => {
   await updateDoc(wineryRef, data);
 };
 
+export const createWinery = async (data) => {
+  // Get current max ID
+  const wineries = await getWineries();
+  const maxId = wineries.reduce((max, w) => Math.max(max, w.id || 0), 0);
+  const newId = maxId + 1;
+
+  const newWinery = {
+    ...data,
+    id: newId,
+    createdAt: Timestamp.now(),
+  };
+
+  const wineryRef = doc(db, "wineries", newId.toString());
+  await setDoc(wineryRef, newWinery);
+
+  return { ...newWinery, docId: newId.toString() };
+};
+
 // ==================== HOUSEKEEPING ====================
 export const getHousekeeping = async () => {
   const housekeepingCol = collection(db, "housekeeping");
@@ -33,6 +52,24 @@ export const getHousekeeping = async () => {
 export const updateHousekeeping = async (id, data) => {
   const housekeepingRef = doc(db, "housekeeping", id.toString());
   await updateDoc(housekeepingRef, data);
+};
+
+export const createHousekeeping = async (data) => {
+  // Get current max ID
+  const housekeepingList = await getHousekeeping();
+  const maxId = housekeepingList.reduce((max, h) => Math.max(max, h.id || 0), 0);
+  const newId = maxId + 1;
+
+  const newHousekeeping = {
+    ...data,
+    id: newId,
+    createdAt: Timestamp.now(),
+  };
+
+  const housekeepingRef = doc(db, "housekeeping", newId.toString());
+  await setDoc(housekeepingRef, newHousekeeping);
+
+  return { ...newHousekeeping, docId: newId.toString() };
 };
 
 // ==================== TEMPLATES ====================

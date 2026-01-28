@@ -13,6 +13,7 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.18",
     "clsx": "^2.1.1",
+    "country-flag-icons": "^1.6.12",
     "firebase": "^12.8.0",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",

@@ -1,13 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Check, X, Edit3, Mail, Filter, Wine, Hotel, EyeOff, Eye, Loader2, CheckSquare, Square, Download } from 'lucide-react';
+import { Search, Check, X, Edit3, Mail, Filter, Wine, Hotel, EyeOff, Eye, Loader2, CheckSquare, Square, Download, Plus } from 'lucide-react';
 import { useWineries, useHousekeeping, useConfig } from '../hooks/useFirebaseData';
 import { useExportCSV } from '../hooks/useExportCSV';
+import CountryFlag from './CountryFlag';
+import CreateCompanyModal from './CreateCompanyModal';
 
 const TrackerView = () => {
   const [sector, setSector] = useState('winery'); // 'winery' or 'housekeeping'
-  const { wineries, loading: wineriesLoading, updateWinery } = useWineries();
-  const { housekeeping, loading: housekeepingLoading, updateHousekeeping } = useHousekeeping();
-  const { flags = {}, statusOptions = [], loading: configLoading } = useConfig();
+  const { wineries, loading: wineriesLoading, updateWinery, createWinery } = useWineries();
+  const { housekeeping, loading: housekeepingLoading, updateHousekeeping, createHousekeeping } = useHousekeeping();
+  const { statusOptions = [], loading: configLoading } = useConfig();
   const { exportToCSV } = useExportCSV();
 
   const [showHidden, setShowHidden] = useState(false);
@@ -23,6 +25,7 @@ const TrackerView = () => {
   const [editNotes, setEditNotes] = useState(''); // For tracking notes in edit modal
   const [editEmail, setEditEmail] = useState(''); // For tracking email in edit modal
   const [selectedStatus, setSelectedStatus] = useState(null); // For filtering by status
+  const [showCreateModal, setShowCreateModal] = useState(false); // For create modal
 
   // Get current dataset based on sector
   const currentData = sector === 'winery' ? wineries : housekeeping;
@@ -261,6 +264,13 @@ const TrackerView = () => {
             <Hotel size={16} />
             Housekeeping
           </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all bg-accent text-black hover:bg-accent/90"
+          >
+            <Plus size={16} />
+            Add New
+          </button>
         </div>
       </div>
 
@@ -348,7 +358,7 @@ const TrackerView = () => {
                         : 'bg-dark-surface text-dark-text hover:bg-dark-hover'
                     }`}
                   >
-                    <span className="text-lg">{flags[country]}</span>
+                    <CountryFlag code={country} size="md" />
                     <span>{country}</span>
                   </button>
                 ))}
@@ -452,7 +462,7 @@ const TrackerView = () => {
                       </button>
                     </td>
                   )}
-                  <td className="p-4 text-2xl">{flags[winery.country] || "🏳️"}</td>
+                  <td className="p-4"><CountryFlag code={winery.country} size="lg" /></td>
                   <td className="p-4 font-medium">{winery.name}</td>
                   <td className="p-4">
                     {winery.email ? (
@@ -575,8 +585,8 @@ const TrackerView = () => {
                     <div className="mt-2 max-h-20 overflow-y-auto">
                       <div className="flex flex-wrap gap-1">
                         {selectedItems.map((item) => (
-                          <span key={item.id} className="text-dark-subtext text-xs bg-dark-surface px-2 py-1 rounded-full">
-                            {flags[item.country]} {item.name}
+                          <span key={item.id} className="text-dark-subtext text-xs bg-dark-surface px-2 py-1 rounded-full flex items-center gap-1">
+                            <CountryFlag code={item.country} size="sm" /> {item.name}
                           </span>
                         ))}
                       </div>
@@ -585,7 +595,7 @@ const TrackerView = () => {
                 ) : (
                   <>
                     <h3 className="text-xl font-bold flex items-center gap-2">
-                      {flags[selectedWinery.country]} {selectedWinery.name}
+                      <CountryFlag code={selectedWinery.country} size="lg" /> {selectedWinery.name}
                     </h3>
                     <input
                       type="email"
@@ -651,6 +661,14 @@ const TrackerView = () => {
           </div>
         </div>
       )}
+
+      {/* Create Company Modal */}
+      <CreateCompanyModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        sector={sector}
+        onCreate={sector === 'winery' ? createWinery : createHousekeeping}
+      />
     </div>
   );
 };

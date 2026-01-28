@@ -4,6 +4,8 @@ import {
   getHousekeeping,
   updateWinery,
   updateHousekeeping,
+  createWinery,
+  createHousekeeping,
   getTemplates,
   updateTemplate,
   getFlags,
@@ -46,7 +48,18 @@ export const useWineries = () => {
     }
   };
 
-  return { wineries, loading, error, updateWinery: updateWineryData, reload: loadWineries };
+  const createWineryData = async (data) => {
+    try {
+      const newWinery = await createWinery(data);
+      setWineries(prev => [...prev, newWinery]);
+      return newWinery;
+    } catch (err) {
+      console.error('Error creating winery:', err);
+      throw err;
+    }
+  };
+
+  return { wineries, loading, error, updateWinery: updateWineryData, createWinery: createWineryData, reload: loadWineries };
 };
 
 export const useHousekeeping = () => {
@@ -82,7 +95,18 @@ export const useHousekeeping = () => {
     }
   };
 
-  return { housekeeping, loading, error, updateHousekeeping: updateHousekeepingData, reload: loadHousekeeping };
+  const createHousekeepingData = async (data) => {
+    try {
+      const newHousekeeping = await createHousekeeping(data);
+      setHousekeeping(prev => [...prev, newHousekeeping]);
+      return newHousekeeping;
+    } catch (err) {
+      console.error('Error creating housekeeping:', err);
+      throw err;
+    }
+  };
+
+  return { housekeeping, loading, error, updateHousekeeping: updateHousekeepingData, createHousekeeping: createHousekeepingData, reload: loadHousekeeping };
 };
 
 export const useTemplates = () => {

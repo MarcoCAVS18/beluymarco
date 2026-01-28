@@ -254,13 +254,4 @@ export const INITIAL_HOUSEKEEPING = housekeepingData.map((item, index) => ({
   notes: ""
 }));
 
-export const FLAGS = {
-  AR: "🇦🇷", NZ: "🇳🇿", AU: "🇦🇺", IT: "🇮🇹", FR: "🇫🇷",
-  US: "🇺🇸", ES: "🇪🇸", ZA: "🇿🇦", PT: "🇵🇹", DE: "🇩🇪",
-  AT: "🇦🇹", CH: "🇨🇭", GR: "🇬🇷", HU: "🇭🇺", CZ: "🇨🇿",
-  GB: "🇬🇧", RO: "🇷🇴", BG: "🇧🇬", HR: "🇭🇷", SI: "🇸🇮",
-  NL: "🇳🇱", CA: "🇨🇦", MX: "🇲🇽", JP: "🇯🇵", ID: "🇮🇩",
-  VN: "🇻🇳", PF: "🇵🇫", SE: "🇸🇪", FI: "🇫🇮", NO: "🇳🇴",
-  IS: "🇮🇸", DK: "🇩🇰",
-  XX: "🏳️"
-};
+// FLAGS object removed - now using country-flag-icons library via CountryFlag component
