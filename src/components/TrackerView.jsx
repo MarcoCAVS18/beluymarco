@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Check, X, Edit3, Mail, Filter, EyeOff, Eye, Loader2, CheckSquare, Square, Download } from 'lucide-react';
+import { Search, Check, X, Edit3, Mail, Filter, EyeOff, Eye, Loader2, CheckSquare, Square, Download, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useWineries, useHousekeeping, useConfig } from '../hooks/useFirebaseData';
 import { useExportCSV } from '../hooks/useExportCSV';
 import CountryFlag from './CountryFlag';
@@ -30,6 +30,7 @@ const TrackerView = () => {
   const [editLocation, setEditLocation] = useState(''); // For tracking location in edit modal
   const [editCountry, setEditCountry] = useState(''); // For tracking country in edit modal
   const [editHarvestSeason, setEditHarvestSeason] = useState(''); // For tracking harvest/season in edit modal
+  const [editEmailVerified, setEditEmailVerified] = useState(null); // null | false | true
   const [selectedStatus, setSelectedStatus] = useState(null); // For filtering by status
   const [showCreateModal, setShowCreateModal] = useState(false); // For create modal
 
@@ -198,6 +199,7 @@ const TrackerView = () => {
       setEditCountry(winery.country || 'NZ');
       setEditHarvestSeason(sector === 'winery' ? (winery.harvestStart || '') : (winery.season || ''));
       setEditNotes(winery.notes || '');
+      setEditEmailVerified(winery.emailVerified ?? null);
     }
   };
 
@@ -211,6 +213,15 @@ const TrackerView = () => {
       }
       if (editEmail !== (selectedWinery.email || '')) {
         updates.email = editEmail;
+        // Si el email cambió, resetear verificación
+        if (editEmail) {
+          updates.emailVerified = false;
+        } else {
+          updates.emailVerified = null;
+        }
+      }
+      if (editEmailVerified !== (selectedWinery.emailVerified ?? null)) {
+        updates.emailVerified = editEmailVerified;
       }
       if (editLocation !== (selectedWinery.location || '')) {
         updates.location = editLocation;
@@ -247,6 +258,7 @@ const TrackerView = () => {
     setEditCountry('');
     setEditHarvestSeason('');
     setEditNotes('');
+    setEditEmailVerified(null);
     if (bulkEditMode) {
       setBulkEditMode(false);
       setSelectedIds(new Set());
@@ -470,19 +482,26 @@ const TrackerView = () => {
                   <td className="p-4 font-medium">{winery.name}</td>
                   <td className="p-4">
                     {winery.email ? (
-                      <button
-                        onClick={(e) => copyEmail(winery.email, e)}
-                        className="text-dark-subtext hover:text-accent text-sm font-mono transition-all duration-200 hover:underline decoration-accent decoration-2 underline-offset-2 cursor-pointer relative group/email"
-                        title="Click to copy email"
-                      >
-                        {winery.email}
-                        {copiedEmail === winery.email && (
-                          <span className="absolute -right-16 top-0 flex items-center gap-1 text-green-400 text-xs font-sans animate-in fade-in slide-in-from-left-2">
-                            <Check size={12} className="animate-bounce" />
-                            Copied!
-                          </span>
-                        )}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => copyEmail(winery.email, e)}
+                          className="text-dark-subtext hover:text-accent text-sm font-mono transition-all duration-200 hover:underline decoration-accent decoration-2 underline-offset-2 cursor-pointer relative group/email"
+                          title="Click to copy email"
+                        >
+                          {winery.email}
+                          {copiedEmail === winery.email && (
+                            <span className="absolute -right-16 top-0 flex items-center gap-1 text-green-400 text-xs font-sans animate-in fade-in slide-in-from-left-2">
+                              <Check size={12} className="animate-bounce" />
+                              Copied!
+                            </span>
+                          )}
+                        </button>
+                        {winery.emailVerified === true ? (
+                          <ShieldCheck size={14} className="text-green-400 flex-shrink-0" title="Email verificado" />
+                        ) : winery.emailVerified === false ? (
+                          <ShieldAlert size={14} className="text-amber-400 flex-shrink-0" title="Email sin verificar — abrí el modal para confirmarlo" />
+                        ) : null}
+                      </div>
                     ) : (
                       <span className="text-dark-subtext text-sm italic">No email</span>
                     )}
@@ -654,11 +673,45 @@ const TrackerView = () => {
                     <input
                       type="email"
                       value={editEmail}
-                      onChange={(e) => setEditEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEditEmail(e.target.value);
+                        // Si cambia el email, se vuelve no verificado
+                        if (e.target.value) setEditEmailVerified(false);
+                        else setEditEmailVerified(null);
+                      }}
                       placeholder="contact@example.com"
                       className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors"
                     />
                   </div>
+
+                  {/* Email Verified */}
+                  {editEmail && (
+                    <div className="flex items-center justify-between px-4 py-3 rounded-xl border transition-colors"
+                      style={{ borderColor: editEmailVerified ? '#22c55e44' : '#f59e0b44', background: editEmailVerified ? '#22c55e11' : '#f59e0b11' }}
+                    >
+                      <div className="flex items-center gap-2">
+                        {editEmailVerified ? (
+                          <ShieldCheck size={16} className="text-green-400" />
+                        ) : (
+                          <ShieldAlert size={16} className="text-amber-400" />
+                        )}
+                        <span className="text-sm font-medium" style={{ color: editEmailVerified ? '#4ade80' : '#fbbf24' }}>
+                          {editEmailVerified ? 'Email verificado' : 'Email sin verificar'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditEmailVerified(prev => !prev)}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                          editEmailVerified
+                            ? 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
+                            : 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
+                        }`}
+                      >
+                        {editEmailVerified ? 'Marcar sin verificar' : 'Confirmar email ✓'}
+                      </button>
+                    </div>
+                  )}
 
                   {/* Location */}
                   <div>

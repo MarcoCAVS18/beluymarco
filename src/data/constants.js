@@ -29,108 +29,116 @@ export const COVER_LETTERS = {
   hkCouple: `Subject: Professional Housekeeping Couple Team - Belu & Marco\n\nHello Team,\n\nWe are Belu and Marco... [PEGAR AQUÍ LA VERSIÓN COMPLETA QUE HICIMOS]`
 };
 
-// Helper function to extract country code from location
+// Helper para detectar país desde ubicación
 function getCountryCode(location) {
   if (!location || location === '...') return 'XX';
+  const l = location.toLowerCase();
 
-  const locationLower = location.toLowerCase();
-
-  // Alemania/Germany
-  if (locationLower.includes('alemania') || locationLower.includes('germany') ||
-      locationLower.includes('palatinado') || locationLower.includes('franconia') ||
-      locationLower.includes('bayern') || locationLower.includes('rheingau') ||
-      locationLower.includes('mosela') || locationLower.includes('saar') ||
-      locationLower.includes('württemberg') || locationLower.includes('hesse')) {
-    return 'DE';
+  if (l.includes('australia') || l.includes('barossa') || l.includes('mclaren vale') ||
+      l.includes('margaret river') || l.includes('hunter valley') || l.includes('yarra valley') ||
+      l.includes('south australia') || l.includes('western australia') || l.includes('victoria') ||
+      l.includes('new south wales') || l.includes('clare valley') || l.includes('coonawarra') ||
+      l.includes('eden valley') || l.includes('nuriootpa') || l.includes('tanunda') ||
+      l.includes('krondorf') || l.includes('angaston') || l.includes('keyneton') ||
+      l.includes('pokolbin') || l.includes('dixons creek') || l.includes('healesville') ||
+      l.includes('gembrook') || l.includes('wilyabrup') || l.includes('marananga')) {
+    return 'AU';
   }
-
-  // Nueva Zelanda
-  if (locationLower.includes('canterbury') || locationLower.includes('waipara') ||
-      locationLower.includes('christchurch') || locationLower.includes('kumeu') ||
-      locationLower.includes('auckland') || locationLower.includes('marlborough') ||
-      locationLower.includes('blenheim') || locationLower.includes('renwick') ||
-      locationLower.includes('waiheke') || locationLower.includes('hawke') ||
-      locationLower.includes('napier') || locationLower.includes('hastings') ||
-      locationLower.includes('martinborough') || locationLower.includes('wairarapa') ||
-      locationLower.includes('otago') || locationLower.includes('queenstown') ||
-      locationLower.includes('nelson') || locationLower.includes('wanaka')) {
+  if (l.includes('nueva zelanda') || l.includes('new zealand') ||
+      l.includes('canterbury') || l.includes('waipara') || l.includes('christchurch') ||
+      l.includes('kumeu') || l.includes('auckland') || l.includes('marlborough') ||
+      l.includes('blenheim') || l.includes('renwick') || l.includes('waiheke') ||
+      l.includes('hawke') || l.includes('napier') || l.includes('hastings') ||
+      l.includes('martinborough') || l.includes('wairarapa') || l.includes('otago') ||
+      l.includes('queenstown') || l.includes('nelson') || l.includes('wanaka')) {
     return 'NZ';
   }
-
-  // Francia
-  if (locationLower.includes('burdeos') || locationLower.includes('bordeaux') ||
-      locationLower.includes('aquitania') || locationLower.includes('saboia') ||
-      locationLower.includes('ródano') || locationLower.includes('rhone') ||
-      locationLower.includes('borgoña') || locationLower.includes('burgundy') ||
-      locationLower.includes('beaune') || locationLower.includes('jura') ||
-      locationLower.includes('hérault') || locationLower.includes('occitania') ||
-      locationLower.includes('provenza') || locationLower.includes('provence') ||
-      locationLower.includes('vaucluse') || locationLower.includes('var')) {
+  if (l.includes('sudáfrica') || l.includes('south africa') || l.includes('stellenbosch') ||
+      l.includes('franschhoek') || l.includes('western cape') || l.includes('constantia') ||
+      l.includes('helderberg') || l.includes('simonsberg') || l.includes('koelenhof') ||
+      l.includes('somerset west') || l.includes('paarl')) {
+    return 'ZA';
+  }
+  if (l.includes('argentina') || l.includes('mendoza') || l.includes('luján de cuyo') ||
+      l.includes('valle de uco') || l.includes('maipú') || l.includes('agrelo')) {
+    return 'AR';
+  }
+  if (l.includes('chile') || l.includes('maipo') || l.includes('colchagua') ||
+      l.includes('casablanca') || l.includes('aconcagua') || l.includes('pirque') ||
+      l.includes('melipilla') || l.includes('panquehue') || l.includes('apalta')) {
+    return 'CL';
+  }
+  if (l.includes('canadá') || l.includes('canada') || l.includes('okanagan') ||
+      l.includes('british columbia') || l.includes('ontario') || l.includes('niagara') ||
+      l.includes('kelowna')) {
+    return 'CA';
+  }
+  if (l.includes('alemania') || l.includes('germany') || l.includes('palatinado') ||
+      l.includes('franconia') || l.includes('bayern') || l.includes('rheingau') ||
+      l.includes('mosela') || l.includes('saar') || l.includes('württemberg') ||
+      l.includes('hesse') || l.includes('rheinhessen') || l.includes('pfalz') ||
+      l.includes('mosel')) {
+    return 'DE';
+  }
+  if (l.includes('francia') || l.includes('france') || l.includes('burdeos') ||
+      l.includes('bordeaux') || l.includes('aquitania') || l.includes('ródano') ||
+      l.includes('rhone') || l.includes('borgoña') || l.includes('burgundy') ||
+      l.includes('beaune') || l.includes('jura') || l.includes('hérault') ||
+      l.includes('occitania') || l.includes('provenza') || l.includes('provence') ||
+      l.includes('vaucluse') || l.includes('var') || l.includes('languedoc') ||
+      l.includes('champagne') || l.includes('saboia') || l.includes('alsacia')) {
     return 'FR';
   }
-
-  // Estados Unidos
-  if (locationLower.includes('california') || locationLower.includes('washington') ||
-      locationLower.includes('oregon') || locationLower.includes('oregón') ||
-      locationLower.includes('virginia') || locationLower.includes('missouri') ||
-      locationLower.includes('wisconsin')) {
-    return 'US';
-  }
-
-  // Italia
-  if (locationLower.includes('italia') || locationLower.includes('italy') ||
-      locationLower.includes('toscana') || locationLower.includes('piemonte') ||
-      locationLower.includes('veneto') || locationLower.includes('sicilia')) {
+  if (l.includes('italia') || l.includes('italy') || l.includes('toscana') ||
+      l.includes('piamonte') || l.includes('piemonte') || l.includes('veneto') ||
+      l.includes('sicilia') || l.includes('montalcino') || l.includes('bolgheri') ||
+      l.includes('chianti') || l.includes('barbaresco') || l.includes('barolo') ||
+      l.includes('alba') || l.includes('firenze') || l.includes('valpolicella') ||
+      l.includes('san casciano') || l.includes('trentino')) {
     return 'IT';
   }
-
-  // España
-  if (locationLower.includes('españa') || locationLower.includes('spain') ||
-      locationLower.includes('rioja') || locationLower.includes('ribera') ||
-      locationLower.includes('priorat') || locationLower.includes('cataluña')) {
+  if (l.includes('españa') || l.includes('spain') || l.includes('rioja') ||
+      l.includes('ribera') || l.includes('priorat') || l.includes('cataluña') ||
+      l.includes('penedès') || l.includes('galicia') || l.includes('navarra') ||
+      l.includes('jerez') || l.includes('valladolid') || l.includes('burgos') ||
+      l.includes('haro') || l.includes('elciego') || l.includes('ollauri') ||
+      l.includes('peñafiel') || l.includes('pesquera de duero')) {
     return 'ES';
   }
-
-  // Portugal
-  if (locationLower.includes('portugal') || locationLower.includes('douro') ||
-      locationLower.includes('alentejo') || locationLower.includes('dão')) {
+  if (l.includes('portugal') || l.includes('douro') || l.includes('alentejo') ||
+      l.includes('dão') || l.includes('vinho verde') || l.includes('lisboa') ||
+      l.includes('algarve')) {
     return 'PT';
   }
-
-  // Austria
-  if (locationLower.includes('austria') || locationLower.includes('österreich') ||
-      locationLower.includes('viena') || locationLower.includes('wachau') ||
-      locationLower.includes('burgenland')) {
+  if (l.includes('austria') || l.includes('österreich') || l.includes('wachau') ||
+      l.includes('burgenland') || l.includes('kamptal') || l.includes('kremstal')) {
     return 'AT';
   }
-
-  // Suiza
-  if (locationLower.includes('suiza') || locationLower.includes('switzerland') ||
-      locationLower.includes('schweiz') || locationLower.includes('valais') ||
-      locationLower.includes('vaud') || locationLower.includes('genève')) {
+  if (l.includes('suiza') || l.includes('switzerland') || l.includes('schweiz') ||
+      l.includes('valais') || l.includes('vaud') || l.includes('genève')) {
     return 'CH';
   }
-
-  // Grecia
-  if (locationLower.includes('grecia') || locationLower.includes('greece') ||
-      locationLower.includes('santorini') || locationLower.includes('creta') ||
-      locationLower.includes('peloponeso')) {
+  if (l.includes('grecia') || l.includes('greece') || l.includes('santorini') ||
+      l.includes('creta') || l.includes('peloponeso') || l.includes('macedonia')) {
     return 'GR';
   }
-
-  // Hungría
-  if (locationLower.includes('hungría') || locationLower.includes('hungary') ||
-      locationLower.includes('tokaj') || locationLower.includes('eger')) {
-    return 'HU';
+  if (l.includes('hungría') || l.includes('hungary') || l.includes('tokaj')) return 'HU';
+  if (l.includes('croacia') || l.includes('croatia') || l.includes('istria') ||
+      l.includes('dalmacia')) return 'HR';
+  if (l.includes('eslovenia') || l.includes('slovenia')) return 'SI';
+  if (l.includes('checa') || l.includes('czech') || l.includes('moravia')) return 'CZ';
+  if (l.includes('bulgaria')) return 'BG';
+  if (l.includes('rumanía') || l.includes('romania')) return 'RO';
+  if (l.includes('georgia') || l.includes('kakheti')) return 'GE';
+  if (l.includes('chipre') || l.includes('cyprus')) return 'CY';
+  if (l.includes('luxemburgo') || l.includes('luxembourg')) return 'LU';
+  if (l.includes('usa') || l.includes('california') || l.includes('washington') ||
+      l.includes('oregon') || l.includes('oregón') || l.includes('virginia') ||
+      l.includes('missouri') || l.includes('wisconsin') || l.includes('napa') ||
+      l.includes('sonoma') || l.includes('estados unidos')) {
+    return 'US';
   }
-
-  // República Checa
-  if (locationLower.includes('checa') || locationLower.includes('czech') ||
-      locationLower.includes('moravia') || locationLower.includes('bohemia')) {
-    return 'CZ';
-  }
-
-  return 'XX'; // Unknown
+  return 'XX';
 }
 
 // Helper function for housekeeping locations

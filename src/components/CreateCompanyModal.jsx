@@ -45,9 +45,11 @@ const CreateCompanyModal = ({ isOpen, onClose, sector, onCreate }) => {
     setError(null);
 
     try {
+      const email = formData.email.trim();
       const data = {
         name: formData.name.trim(),
-        email: formData.email.trim(),
+        email: email,
+        emailVerified: email ? false : null,
         location: formData.location.trim(),
         country: formData.country,
         status: formData.status,

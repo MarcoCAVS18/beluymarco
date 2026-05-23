@@ -169,13 +169,17 @@ async function syncHousekeeping() {
   });
 
   // 2. Process JSON data
-  const jsonData = housekeepingData.map((item, index) => ({
-    name: item["Nombre de la Empresa"] || '',
-    email: item["Email de Contacto"] || '',
-    location: item["Ubicación"] || '',
-    season: item["Temporada"] || '',
-    country: getCountryCodeFromHousekeeping(item["Ubicación"]),
-  }));
+  const jsonData = housekeepingData.map((item, index) => {
+    const email = item["Email de Contacto"] || '';
+    return {
+      name: item["Nombre de la Empresa"] || '',
+      email: email,
+      emailVerified: email ? false : null,
+      location: item["Ubicación"] || '',
+      season: item["Temporada"] || '',
+      country: getCountryCodeFromHousekeeping(item["Ubicación"]),
+    };
+  });
 
   console.log(`📊 JSON tiene ${jsonData.length} empresas\n`);
 
@@ -197,6 +201,8 @@ async function syncHousekeeping() {
       if (existing.location !== jsonItem.location) changes.push(`location: "${existing.location}" → "${jsonItem.location}"`);
       if (existing.season !== jsonItem.season) changes.push(`season: "${existing.season}" → "${jsonItem.season}"`);
       if (existing.country !== jsonItem.country) changes.push(`country: "${existing.country}" → "${jsonItem.country}"`);
+      // Si el email cambió a uno con valor, y no había emailVerified, se inicializa como false
+      if (jsonItem.email && existing.emailVerified === undefined) changes.push(`emailVerified: undefined → false`);
 
       if (changes.length > 0) {
         toUpdate.push({ existing, jsonItem, changes });
@@ -301,6 +307,10 @@ async function syncHousekeeping() {
         location: item.jsonItem.location,
         season: item.jsonItem.season,
         country: item.jsonItem.country,
+        // Si hay email y el campo no existía, inicializar como false
+        ...(item.jsonItem.email && item.existing.emailVerified === undefined
+          ? { emailVerified: false }
+          : {}),
         // ⚠️ NUNCA incluir status aquí!
       };
 
