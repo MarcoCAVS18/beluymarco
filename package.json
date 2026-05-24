@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "seed": "node scripts/seedFirebase.cjs"
+    "seed": "node --env-file=.env scripts/seedFirebase.cjs"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.18",

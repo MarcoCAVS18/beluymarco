@@ -37,3 +37,8 @@ ui-debug.log
 # Data files (raw imports)
 csvjson.json
 housekeeping.json
+
+# Variables de entorno (nunca commitear)
+.env
+.env.local
+.env.*.local
