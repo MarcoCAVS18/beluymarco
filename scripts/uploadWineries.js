@@ -162,6 +162,15 @@ function getCountryCode(location) {
 
 async function uploadWineries() {
   try {
+    // ⚠️  GUARD: este script BORRA toda la colección wineries (status, notes y hidden incluidos)
+    // y la repuebla desde csvjson.json. Para evitar destruir progreso por accidente, requiere
+    // el flag --force-destroy. Si necesitás esto, primero exportá Firestore a Cloud Storage.
+    if (!process.argv.includes('--force-destroy')) {
+      console.error('❌ Este script DESTRUYE todos los datos de wineries (status, notes, hidden).');
+      console.error('   Si realmente querés correrlo, pasá --force-destroy y exportá Firestore antes.');
+      process.exit(1);
+    }
+
     console.log("🍷 Iniciando carga de bodegas a Firebase...\n");
 
     // Leer el JSON

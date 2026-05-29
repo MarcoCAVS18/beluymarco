@@ -4,6 +4,16 @@
  * Ejecutar con: node scripts/seedFirebase.cjs
  */
 
+// ⚠️  GUARD: este script usa batch.set() que sobreescribe documentos, borrando
+// status/notes/hidden ya marcados. Para evitar destruir progreso por accidente,
+// requiere --force-destroy. Usá scripts/seedFirebase.js (la versión .js) que solo
+// crea documentos nuevos sin tocar los existentes.
+if (!process.argv.includes('--force-destroy')) {
+  console.error('❌ Este script SOBREESCRIBE wineries y housekeeping (resetea status, notes, hidden).');
+  console.error('   Usá scripts/seedFirebase.js que solo crea nuevos, o pasá --force-destroy.');
+  process.exit(1);
+}
+
 const firebase = require('../node_modules/firebase/firebase-compat.js');
 const wineriesData = require('../csvjson.json');
 const housekeepingData = require('../housekeeping.json');

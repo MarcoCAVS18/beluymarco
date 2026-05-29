@@ -1,5 +1,11 @@
+// ⚠️  ADVERTENCIA: este script solo CREA documentos nuevos. No toca los que ya existen
+// en Firestore, así no se pierden status/notes/hidden marcados a mano.
+// Como el id se calcula como (index + 1), NUNCA reordenes ni insertes filas en medio
+// de csvjson.json / housekeeping.json — solo APPEND al final. Si reordenás, los IDs
+// existentes en Firestore quedarán apuntando a empresas distintas.
+
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, doc, setDoc, writeBatch } from "firebase/firestore";
+import { getFirestore, collection, doc, getDocs, setDoc, writeBatch } from "firebase/firestore";
 import wineriesData from '../csvjson.json' with { type: 'json' };
 import housekeepingData from '../housekeeping.json' with { type: 'json' };
 
@@ -246,8 +252,10 @@ function getCountryCodeFromHousekeeping(location) {
 }
 
 async function seedWineries() {
-  console.log('📝 Seeding wineries...');
-  const batch = writeBatch(db);
+  console.log('📝 Seeding wineries (solo nuevas)...');
+
+  const existingSnap = await getDocs(collection(db, "wineries"));
+  const existingIds = new Set(existingSnap.docs.map(d => d.id));
 
   const wineries = wineriesData
     .filter(item => item["Bodega (Weingut)"] && item["Bodega (Weingut)"] !== '...' && item["Bodega (Weingut)"].trim() !== '')
@@ -274,18 +282,28 @@ async function seedWineries() {
       };
     });
 
-  wineries.forEach((winery) => {
+  const toCreate = wineries.filter(w => !existingIds.has(w.id.toString()));
+
+  if (toCreate.length === 0) {
+    console.log(`✅ Wineries: ya existen ${existingSnap.size} documentos, no se crea nada nuevo`);
+    return;
+  }
+
+  const batch = writeBatch(db);
+  toCreate.forEach((winery) => {
     const wineryRef = doc(db, "wineries", winery.id.toString());
     batch.set(wineryRef, winery);
   });
 
   await batch.commit();
-  console.log(`✅ ${wineries.length} wineries seeded`);
+  console.log(`✅ ${toCreate.length} wineries nuevas creadas (${existingSnap.size} existentes preservadas)`);
 }
 
 async function seedHousekeeping() {
-  console.log('📝 Seeding housekeeping...');
-  const batch = writeBatch(db);
+  console.log('📝 Seeding housekeeping (solo nuevas)...');
+
+  const existingSnap = await getDocs(collection(db, "housekeeping"));
+  const existingIds = new Set(existingSnap.docs.map(d => d.id));
 
   const housekeeping = housekeepingData.map((item, index) => {
     const email = item["Email de Contacto"] || '';
@@ -303,13 +321,21 @@ async function seedHousekeeping() {
     };
   });
 
-  housekeeping.forEach((hotel) => {
+  const toCreate = housekeeping.filter(h => !existingIds.has(h.id.toString()));
+
+  if (toCreate.length === 0) {
+    console.log(`✅ Housekeeping: ya existen ${existingSnap.size} documentos, no se crea nada nuevo`);
+    return;
+  }
+
+  const batch = writeBatch(db);
+  toCreate.forEach((hotel) => {
     const hotelRef = doc(db, "housekeeping", hotel.id.toString());
     batch.set(hotelRef, hotel);
   });
 
   await batch.commit();
-  console.log(`✅ ${housekeeping.length} hotels seeded`);
+  console.log(`✅ ${toCreate.length} hotels nuevos creados (${existingSnap.size} existentes preservados)`);
 }
 
 async function seedTemplates() {
