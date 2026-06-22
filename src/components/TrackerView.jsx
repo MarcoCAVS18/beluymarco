@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Check, X, Edit3, Mail, Filter, EyeOff, Eye, Loader2, CheckSquare, Square, Download, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useWineries, useHousekeeping, useConfig } from '../hooks/useFirebaseData';
 import { useExportCSV } from '../hooks/useExportCSV';
+import { isRecentlyAdded } from '../data/constants';
 import CountryFlag from './CountryFlag';
 import CountrySelect from './CountrySelect';
 import CreateCompanyModal from './CreateCompanyModal';
@@ -479,7 +480,19 @@ const TrackerView = () => {
                     </td>
                   )}
                   <td className="p-4"><CountryFlag code={winery.country} size="lg" /></td>
-                  <td className="p-4 font-medium">{winery.name}</td>
+                  <td className="p-4 font-medium">
+                    <span className="inline-flex items-center gap-2">
+                      {winery.name}
+                      {isRecentlyAdded(winery.createdAt) && (
+                        <span
+                          className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-green-500/20 text-green-300 border border-green-500/30"
+                          title="Agregada recientemente"
+                        >
+                          New
+                        </span>
+                      )}
+                    </span>
+                  </td>
                   <td className="p-4">
                     {winery.email ? (
                       <div className="flex items-center gap-2">

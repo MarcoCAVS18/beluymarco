@@ -250,6 +250,24 @@ export const STATUS_OPTIONS = [
   { label: 'Rejected', color: 'bg-red-600' },
 ];
 
+// Cuántos días se muestra el tag "NEW" desde que se agregó una empresa.
+// El badge se basa en `createdAt`, así que aplica solo a las nuevas y se
+// auto-expira sin necesidad de des-marcar nada manualmente.
+export const NEW_BADGE_DAYS = 30;
+
+// Devuelve true si la empresa se creó hace menos de `days` días.
+// Soporta los formatos de `createdAt`: Firestore Timestamp, { seconds }, número (ms) o fecha.
+export function isRecentlyAdded(createdAt, days = NEW_BADGE_DAYS) {
+  if (!createdAt) return false;
+  let ms;
+  if (typeof createdAt.toDate === 'function') ms = createdAt.toDate().getTime();
+  else if (typeof createdAt.seconds === 'number') ms = createdAt.seconds * 1000;
+  else if (typeof createdAt === 'number') ms = createdAt;
+  else ms = new Date(createdAt).getTime();
+  if (Number.isNaN(ms)) return false;
+  return Date.now() - ms < days * 24 * 60 * 60 * 1000;
+}
+
 // Transform housekeeping data
 export const INITIAL_HOUSEKEEPING = housekeepingData.map((item, index) => ({
   id: index + 1,
