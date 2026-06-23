@@ -1,6 +1,6 @@
-import { Wine, Hotel, Plus } from 'lucide-react';
+import { Wine, Hotel, Fingerprint, Plus } from 'lucide-react';
 
-const SectorToggle = ({ sector, onSectorChange, onAddNew, showAddButton = true }) => {
+const SectorToggle = ({ sector, onSectorChange, onAddNew, showAddButton = true, includeKyc = false }) => {
   return (
     <div className="flex justify-center">
       <div className="bg-dark-sidebar p-1 rounded-full border border-dark-hover inline-flex">
@@ -26,6 +26,19 @@ const SectorToggle = ({ sector, onSectorChange, onAddNew, showAddButton = true }
           <Hotel size={16} />
           Housekeeping
         </button>
+        {includeKyc && (
+          <button
+            onClick={() => onSectorChange('kyc')}
+            className={`flex items-center gap-2 px-6 py-2 rounded-full text-sm font-medium transition-all ${
+              sector === 'kyc'
+                ? 'bg-dark-surface text-white shadow-sm'
+                : 'text-dark-subtext hover:text-white'
+            }`}
+          >
+            <Fingerprint size={16} />
+            KYC
+          </button>
+        )}
         {showAddButton && onAddNew && (
           <button
             onClick={onAddNew}

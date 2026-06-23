@@ -72,6 +72,35 @@ export const createHousekeeping = async (data) => {
   return { ...newHousekeeping, docId: newId.toString() };
 };
 
+// ==================== KYC (remoto) ====================
+export const getKyc = async () => {
+  const kycCol = collection(db, "kyc");
+  const kycSnapshot = await getDocs(query(kycCol, orderBy("id")));
+  return kycSnapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
+};
+
+export const updateKyc = async (id, data) => {
+  const kycRef = doc(db, "kyc", id.toString());
+  await updateDoc(kycRef, data);
+};
+
+export const createKyc = async (data) => {
+  const kycList = await getKyc();
+  const maxId = kycList.reduce((max, k) => Math.max(max, k.id || 0), 0);
+  const newId = maxId + 1;
+
+  const newKyc = {
+    ...data,
+    id: newId,
+    createdAt: Timestamp.now(),
+  };
+
+  const kycRef = doc(db, "kyc", newId.toString());
+  await setDoc(kycRef, newKyc);
+
+  return { ...newKyc, docId: newId.toString() };
+};
+
 // ==================== TEMPLATES ====================
 export const getTemplates = async () => {
   const templatesCol = collection(db, "templates");

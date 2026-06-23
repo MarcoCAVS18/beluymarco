@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Check, X, Edit3, Mail, Filter, EyeOff, Eye, Loader2, CheckSquare, Square, Download, ShieldAlert, ShieldCheck } from 'lucide-react';
-import { useWineries, useHousekeeping, useConfig } from '../hooks/useFirebaseData';
+import { Search, Check, X, Edit3, Mail, Filter, EyeOff, Eye, Loader2, CheckSquare, Square, Download, ShieldAlert, ShieldCheck, ExternalLink } from 'lucide-react';
+import { useWineries, useHousekeeping, useKyc, useConfig } from '../hooks/useFirebaseData';
 import { useExportCSV } from '../hooks/useExportCSV';
 import { isRecentlyAdded } from '../data/constants';
 import CountryFlag from './CountryFlag';
@@ -12,6 +12,7 @@ const TrackerView = () => {
   const [sector, setSector] = useState('winery'); // 'winery' or 'housekeeping'
   const { wineries, loading: wineriesLoading, updateWinery, createWinery } = useWineries();
   const { housekeeping, loading: housekeepingLoading, updateHousekeeping, createHousekeeping } = useHousekeeping();
+  const { kyc, loading: kycLoading, updateKyc, createKyc } = useKyc();
   const { statusOptions = [], loading: configLoading } = useConfig();
   const { exportToCSV } = useExportCSV();
 
@@ -30,15 +31,16 @@ const TrackerView = () => {
   const [editName, setEditName] = useState(''); // For tracking name in edit modal
   const [editLocation, setEditLocation] = useState(''); // For tracking location in edit modal
   const [editCountry, setEditCountry] = useState(''); // For tracking country in edit modal
-  const [editHarvestSeason, setEditHarvestSeason] = useState(''); // For tracking harvest/season in edit modal
+  const [editHarvestSeason, setEditHarvestSeason] = useState(''); // For tracking harvest/season/segment in edit modal
+  const [editApplyUrl, setEditApplyUrl] = useState(''); // KYC: link de aplicación (formulario/portal)
   const [editEmailVerified, setEditEmailVerified] = useState(null); // null | false | true
   const [selectedStatus, setSelectedStatus] = useState(null); // For filtering by status
   const [showCreateModal, setShowCreateModal] = useState(false); // For create modal
 
   // Get current dataset based on sector
-  const currentData = sector === 'winery' ? wineries : housekeeping;
-  const updateCurrentData = sector === 'winery' ? updateWinery : updateHousekeeping;
-  const loading = wineriesLoading || housekeepingLoading || configLoading;
+  const currentData = sector === 'winery' ? wineries : sector === 'kyc' ? kyc : housekeeping;
+  const updateCurrentData = sector === 'winery' ? updateWinery : sector === 'kyc' ? updateKyc : updateHousekeeping;
+  const loading = wineriesLoading || housekeepingLoading || kycLoading || configLoading;
 
   // Get unique countries
   const uniqueCountries = useMemo(() => {
@@ -198,7 +200,8 @@ const TrackerView = () => {
       setEditEmail(winery.email || '');
       setEditLocation(winery.location || '');
       setEditCountry(winery.country || 'NZ');
-      setEditHarvestSeason(sector === 'winery' ? (winery.harvestStart || '') : (winery.season || ''));
+      setEditHarvestSeason(sector === 'winery' ? (winery.harvestStart || '') : sector === 'kyc' ? (winery.segment || '') : (winery.season || ''));
+      setEditApplyUrl(winery.applyUrl || '');
       setEditNotes(winery.notes || '');
       setEditEmailVerified(winery.emailVerified ?? null);
     }
@@ -230,14 +233,20 @@ const TrackerView = () => {
       if (editCountry !== (selectedWinery.country || '')) {
         updates.country = editCountry;
       }
-      // Handle harvest/season based on sector
-      const currentHarvestSeason = sector === 'winery' ? (selectedWinery.harvestStart || '') : (selectedWinery.season || '');
+      // Handle harvest/season/segment based on sector
+      const currentHarvestSeason = sector === 'winery' ? (selectedWinery.harvestStart || '') : sector === 'kyc' ? (selectedWinery.segment || '') : (selectedWinery.season || '');
       if (editHarvestSeason !== currentHarvestSeason) {
         if (sector === 'winery') {
           updates.harvestStart = editHarvestSeason;
+        } else if (sector === 'kyc') {
+          updates.segment = editHarvestSeason;
         } else {
           updates.season = editHarvestSeason;
         }
+      }
+      // KYC: link de aplicación
+      if (sector === 'kyc' && editApplyUrl !== (selectedWinery.applyUrl || '')) {
+        updates.applyUrl = editApplyUrl;
       }
       if (editNotes !== (selectedWinery.notes || '')) {
         updates.notes = editNotes;
@@ -258,6 +267,7 @@ const TrackerView = () => {
     setEditLocation('');
     setEditCountry('');
     setEditHarvestSeason('');
+    setEditApplyUrl('');
     setEditNotes('');
     setEditEmailVerified(null);
     if (bulkEditMode) {
@@ -289,13 +299,14 @@ const TrackerView = () => {
           setSelectedStatus(null);
         }}
         onAddNew={() => setShowCreateModal(true)}
+        includeKyc={true}
       />
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h2 className="text-2xl font-semibold">
-              {sector === 'winery' ? 'Winery' : 'Housekeeping'} Applications
+              {sector === 'winery' ? 'Winery' : sector === 'kyc' ? 'KYC' : 'Housekeeping'} Applications
             </h2>
             <p className="text-dark-subtext text-sm">
               Showing {filteredWineries.length} of {currentData.length} opportunities
@@ -306,7 +317,7 @@ const TrackerView = () => {
               <Search className="absolute left-3 top-2.5 text-dark-subtext w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search winery or country..."
+                placeholder="Search name or country..."
                 className="w-full bg-dark-surface border border-transparent focus:border-accent rounded-full py-2 pl-10 pr-4 text-sm outline-none transition-all"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -446,8 +457,8 @@ const TrackerView = () => {
                   </th>
                 )}
                 <th className="p-4">Country</th>
-                <th className="p-4">{sector === 'winery' ? 'Winery Name' : 'Hotel/Resort'}</th>
-                <th className="p-4">Email</th>
+                <th className="p-4">{sector === 'winery' ? 'Winery Name' : sector === 'kyc' ? 'Company' : 'Hotel/Resort'}</th>
+                <th className="p-4">{sector === 'kyc' ? 'Email / Apply' : 'Email'}</th>
                 <th className="p-4">Status</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
@@ -515,6 +526,18 @@ const TrackerView = () => {
                           <ShieldAlert size={14} className="text-amber-400 flex-shrink-0" title="Email sin verificar — abrí el modal para confirmarlo" />
                         ) : null}
                       </div>
+                    ) : winery.applyUrl ? (
+                      <a
+                        href={winery.applyUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-400 hover:text-blue-300 hover:underline"
+                        title="Sin email — aplicar por formulario/portal"
+                      >
+                        <ExternalLink size={14} />
+                        Aplicar (formulario)
+                      </a>
                     ) : (
                       <span className="text-dark-subtext text-sm italic">No email</span>
                     )}
@@ -747,19 +770,35 @@ const TrackerView = () => {
                     />
                   </div>
 
-                  {/* Harvest Start / Season */}
+                  {/* Harvest Start / Season / Segment */}
                   <div>
                     <label className="block text-sm font-medium text-dark-subtext mb-1.5">
-                      {sector === 'winery' ? 'Harvest Start' : 'Season'}
+                      {sector === 'winery' ? 'Harvest Start' : sector === 'kyc' ? 'Segmento' : 'Season'}
                     </label>
                     <input
                       type="text"
                       value={editHarvestSeason}
                       onChange={(e) => setEditHarvestSeason(e.target.value)}
-                      placeholder={sector === 'winery' ? 'e.g. "finales de agosto"' : 'e.g. "Winter 2026"'}
+                      placeholder={sector === 'winery' ? 'e.g. "finales de agosto"' : sector === 'kyc' ? 'Cripto / Fintech / RegTech / BPO' : 'e.g. "Winter 2026"'}
                       className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors"
                     />
                   </div>
+
+                  {/* KYC: link de aplicación (si no hay email) */}
+                  {sector === 'kyc' && (
+                    <div>
+                      <label className="block text-sm font-medium text-dark-subtext mb-1.5">
+                        Link de aplicación (si no hay email)
+                      </label>
+                      <input
+                        type="url"
+                        value={editApplyUrl}
+                        onChange={(e) => setEditApplyUrl(e.target.value)}
+                        placeholder="https://careers.empresa.com/kyc-analyst"
+                        className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors"
+                      />
+                    </div>
+                  )}
 
                   {/* Status */}
                   <div>
@@ -814,7 +853,7 @@ const TrackerView = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         sector={sector}
-        onCreate={sector === 'winery' ? createWinery : createHousekeeping}
+        onCreate={sector === 'winery' ? createWinery : sector === 'kyc' ? createKyc : createHousekeeping}
       />
     </div>
   );

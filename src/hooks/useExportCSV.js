@@ -16,7 +16,9 @@ export const useExportCSV = () => {
     // CSV headers based on sector
     const headers = sector === 'winery'
       ? ['Name', 'Email', 'Location', 'Country', 'Harvest Start', 'Notes']
-      : ['Name', 'Email', 'Location', 'Country', 'Season', 'Notes'];
+      : sector === 'kyc'
+        ? ['Name', 'Email', 'Apply URL', 'Location', 'Country', 'Segment', 'Notes']
+        : ['Name', 'Email', 'Location', 'Country', 'Season', 'Notes'];
 
     // Helper to escape CSV values
     const escapeCSV = (value) => {
@@ -49,7 +51,17 @@ export const useExportCSV = () => {
               escapeCSV(item.harvestStart),
               escapeCSV(item.notes)
             ]
-          : [
+          : sector === 'kyc'
+            ? [
+                escapeCSV(item.name),
+                escapeCSV(item.email),
+                escapeCSV(item.applyUrl),
+                escapeCSV(item.location),
+                escapeCSV(item.country),
+                escapeCSV(item.segment),
+                escapeCSV(item.notes)
+              ]
+            : [
               escapeCSV(item.name),
               escapeCSV(item.email),
               escapeCSV(item.location),

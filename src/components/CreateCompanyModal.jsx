@@ -19,6 +19,8 @@ const CreateCompanyModal = ({ isOpen, onClose, sector, onCreate }) => {
     country: 'NZ',
     harvestStart: '',
     season: '',
+    segment: '',
+    applyUrl: '',
     status: 'Pending',
     notes: '',
   });
@@ -60,6 +62,9 @@ const CreateCompanyModal = ({ isOpen, onClose, sector, onCreate }) => {
       // Add sector-specific field
       if (sector === 'winery') {
         data.harvestStart = formData.harvestStart.trim();
+      } else if (sector === 'kyc') {
+        data.segment = formData.segment.trim();
+        data.applyUrl = formData.applyUrl.trim();
       } else {
         data.season = formData.season.trim();
       }
@@ -111,7 +116,7 @@ const CreateCompanyModal = ({ isOpen, onClose, sector, onCreate }) => {
           {/* Header */}
           <div className="flex justify-between items-center p-6 border-b border-dark-hover sticky top-0 bg-dark-sidebar">
             <h3 className="text-xl font-bold">
-              Create New {sector === 'winery' ? 'Winery' : 'Housekeeping'}
+              Create New {sector === 'winery' ? 'Winery' : sector === 'kyc' ? 'KYC Company' : 'Housekeeping'}
             </h3>
             <button
               type="button"
@@ -184,19 +189,35 @@ const CreateCompanyModal = ({ isOpen, onClose, sector, onCreate }) => {
               />
             </div>
 
-            {/* Harvest Start / Season */}
+            {/* Harvest Start / Season / Segment */}
             <div>
               <label className="block text-sm font-medium text-dark-subtext mb-1.5">
-                {sector === 'winery' ? 'Harvest Start' : 'Season'}
+                {sector === 'winery' ? 'Harvest Start' : sector === 'kyc' ? 'Segmento' : 'Season'}
               </label>
               <input
                 type="text"
-                value={sector === 'winery' ? formData.harvestStart : formData.season}
-                onChange={(e) => handleChange(sector === 'winery' ? 'harvestStart' : 'season', e.target.value)}
-                placeholder={sector === 'winery' ? 'e.g. "finales de agosto"' : 'e.g. "Winter 2026"'}
+                value={sector === 'winery' ? formData.harvestStart : sector === 'kyc' ? formData.segment : formData.season}
+                onChange={(e) => handleChange(sector === 'winery' ? 'harvestStart' : sector === 'kyc' ? 'segment' : 'season', e.target.value)}
+                placeholder={sector === 'winery' ? 'e.g. "finales de agosto"' : sector === 'kyc' ? 'Cripto / Fintech / RegTech / BPO' : 'e.g. "Winter 2026"'}
                 className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors"
               />
             </div>
+
+            {/* Apply URL (solo KYC: si la empresa aplica por formulario/portal en vez de email) */}
+            {sector === 'kyc' && (
+              <div>
+                <label className="block text-sm font-medium text-dark-subtext mb-1.5">
+                  Link de aplicación (si no hay email)
+                </label>
+                <input
+                  type="url"
+                  value={formData.applyUrl}
+                  onChange={(e) => handleChange('applyUrl', e.target.value)}
+                  placeholder="https://careers.empresa.com/kyc-analyst"
+                  className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors"
+                />
+              </div>
+            )}
 
             {/* Status */}
             <div>

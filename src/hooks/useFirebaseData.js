@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import {
   getWineries,
   getHousekeeping,
+  getKyc,
   updateWinery,
   updateHousekeeping,
+  updateKyc,
   createWinery,
   createHousekeeping,
+  createKyc,
   getTemplates,
   updateTemplate,
   getFlags,
@@ -107,6 +110,53 @@ export const useHousekeeping = () => {
   };
 
   return { housekeeping, loading, error, updateHousekeeping: updateHousekeepingData, createHousekeeping: createHousekeepingData, reload: loadHousekeeping };
+};
+
+export const useKyc = () => {
+  const [kyc, setKyc] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    loadKyc();
+  }, []);
+
+  const loadKyc = async () => {
+    try {
+      setLoading(true);
+      const data = await getKyc();
+      setKyc(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading kyc:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateKycData = async (id, updates) => {
+    try {
+      await updateKyc(id, updates);
+      setKyc(prev => prev.map(k => k.id === id ? { ...k, ...updates } : k));
+    } catch (err) {
+      console.error('Error updating kyc:', err);
+      throw err;
+    }
+  };
+
+  const createKycData = async (data) => {
+    try {
+      const newKyc = await createKyc(data);
+      setKyc(prev => [...prev, newKyc]);
+      return newKyc;
+    } catch (err) {
+      console.error('Error creating kyc:', err);
+      throw err;
+    }
+  };
+
+  return { kyc, loading, error, updateKyc: updateKycData, createKyc: createKycData, reload: loadKyc };
 };
 
 export const useTemplates = () => {
