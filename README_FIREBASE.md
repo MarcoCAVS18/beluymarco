@@ -115,12 +115,15 @@ npm run seed
 
 ## 🔒 Seguridad
 
-**⚠️ IMPORTANTE:** Las reglas actuales permiten lectura/escritura pública.
+El acceso está restringido a una sola cuenta de Google (uso personal). Pasos de setup:
 
-Para mejorar la seguridad en el futuro:
-1. Implementar Firebase Authentication
-2. Descomentar las reglas con autenticación en `firestore.rules`
-3. Re-deployar las reglas: `firebase deploy --only firestore:rules`
+1. En Firebase Console > Authentication > Sign-in method, habilitar el proveedor **Google**.
+2. En Firebase Console > Authentication > Settings > Authorized domains, agregar el dominio de Netlify del sitio (ej. `tu-sitio.netlify.app`).
+3. `firestore.rules` ya exige `request.auth.token.email == 'marcopiermatei1@gmail.com'` para leer/escribir cualquier colección. Deployar con:
+   ```bash
+   firebase deploy --only firestore:rules
+   ```
+4. Si el email autorizado cambia, actualizar tanto `firestore.rules` como `VITE_ALLOWED_EMAIL` en las env vars de Netlify.
 
 ## 🆘 Troubleshooting
 

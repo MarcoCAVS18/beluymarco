@@ -117,6 +117,14 @@ export const updateTemplate = async (templateId, content) => {
   await setDoc(templateRef, { content }, { merge: true });
 };
 
+// Trae el template de email de un rubro puntual (winery, housekeeping, kyc, etc).
+// Se usa para autocompletar el cuerpo del email al enviar a una empresa específica.
+export const getEmailTemplate = async (sector) => {
+  const templateRef = doc(db, "templates", `${sector}-email`);
+  const templateDoc = await getDoc(templateRef);
+  return templateDoc.exists() ? (templateDoc.data().content || '') : '';
+};
+
 // ==================== CONFIG ====================
 export const getConfig = async () => {
   const configDoc = await getDoc(doc(db, "config", "app"));

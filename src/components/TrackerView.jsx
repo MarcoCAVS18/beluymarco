@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Check, X, Edit3, Mail, Filter, EyeOff, Eye, Loader2, CheckSquare, Square, Download, ShieldAlert, ShieldCheck, ExternalLink } from 'lucide-react';
+import { Search, Check, X, Edit3, Mail, Filter, EyeOff, Eye, Loader2, CheckSquare, Square, Download, ShieldAlert, ShieldCheck, ExternalLink, Send } from 'lucide-react';
 import { useWineries, useHousekeeping, useKyc, useConfig } from '../hooks/useFirebaseData';
 import { useExportCSV } from '../hooks/useExportCSV';
 import { isRecentlyAdded } from '../data/constants';
 import CountryFlag from './CountryFlag';
 import CountrySelect from './CountrySelect';
 import CreateCompanyModal from './CreateCompanyModal';
+import EmailSendModal from './EmailSendModal';
 import SectorToggle from './SectorToggle';
 
 const TrackerView = () => {
@@ -36,6 +37,7 @@ const TrackerView = () => {
   const [editEmailVerified, setEditEmailVerified] = useState(null); // null | false | true
   const [selectedStatus, setSelectedStatus] = useState(null); // For filtering by status
   const [showCreateModal, setShowCreateModal] = useState(false); // For create modal
+  const [emailCompany, setEmailCompany] = useState(null); // Empresa con el modal de envío de email abierto
 
   // Get current dataset based on sector
   const currentData = sector === 'winery' ? wineries : sector === 'kyc' ? kyc : housekeeping;
@@ -549,6 +551,18 @@ const TrackerView = () => {
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {winery.email && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEmailCompany(winery);
+                          }}
+                          className="p-2 rounded-full hover:bg-dark-surface text-accent transition-all duration-200 hover:scale-110"
+                          title="Enviar email"
+                        >
+                          <Send size={16} />
+                        </button>
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -854,6 +868,14 @@ const TrackerView = () => {
         onClose={() => setShowCreateModal(false)}
         sector={sector}
         onCreate={sector === 'winery' ? createWinery : sector === 'kyc' ? createKyc : createHousekeeping}
+      />
+
+      {/* Email Send Modal */}
+      <EmailSendModal
+        isOpen={!!emailCompany}
+        company={emailCompany}
+        sector={sector}
+        onClose={() => setEmailCompany(null)}
       />
     </div>
   );
