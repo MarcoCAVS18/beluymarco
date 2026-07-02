@@ -43,3 +43,6 @@ kyc.json
 .env
 .env.local
 .env.*.local
+
+# Patches sueltos
+*.patch
