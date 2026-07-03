@@ -15,7 +15,11 @@ import {
   getStatusOptions,
   getResumes,
   getOtherDocuments,
-  getCoverLetters
+  getCoverLetters,
+  getSubjects,
+  createSubject,
+  updateSubject,
+  deleteSubject
 } from '../firebase/services';
 
 export const useWineries = () => {
@@ -212,6 +216,63 @@ export const useTemplates = () => {
   };
 
   return { templates, loading, error, updateTemplate: updateTemplateContent };
+};
+
+export const useSubjects = () => {
+  const [subjects, setSubjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    loadSubjects();
+  }, []);
+
+  const loadSubjects = async () => {
+    try {
+      setLoading(true);
+      const data = await getSubjects();
+      setSubjects(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error loading subjects:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addSubject = async (sector, text) => {
+    try {
+      const newSubject = await createSubject({ sector, text });
+      setSubjects(prev => [...prev, newSubject]);
+      return newSubject;
+    } catch (err) {
+      console.error('Error creating subject:', err);
+      throw err;
+    }
+  };
+
+  const editSubject = async (id, text) => {
+    try {
+      await updateSubject(id, { text });
+      setSubjects(prev => prev.map(s => s.id === id ? { ...s, text } : s));
+    } catch (err) {
+      console.error('Error updating subject:', err);
+      throw err;
+    }
+  };
+
+  const removeSubject = async (id) => {
+    try {
+      await deleteSubject(id);
+      setSubjects(prev => prev.filter(s => s.id !== id));
+    } catch (err) {
+      console.error('Error deleting subject:', err);
+      throw err;
+    }
+  };
+
+  return { subjects, loading, error, addSubject, editSubject, removeSubject, reload: loadSubjects };
 };
 
 export const useConfig = () => {

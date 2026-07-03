@@ -5,6 +5,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteDoc,
   query,
   orderBy,
   Timestamp
@@ -122,6 +123,32 @@ export const getEmailTemplate = async (sector) => {
   const templateRef = doc(db, "templates", `${sector}-email`);
   const templateDoc = await getDoc(templateRef);
   return templateDoc.exists() ? (templateDoc.data().content || '') : '';
+};
+
+// ==================== SUBJECTS ====================
+// Asuntos de email guardados por rubro. El usuario puede tener varios por
+// sector y elegir cuál usar al enviar cada email.
+export const getSubjects = async () => {
+  const subjectsCol = collection(db, "subjects");
+  const subjectsSnapshot = await getDocs(query(subjectsCol, orderBy("createdAt")));
+  return subjectsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+};
+
+export const createSubject = async ({ sector, text }) => {
+  const subjectRef = doc(collection(db, "subjects"));
+  const newSubject = { sector, text, createdAt: Timestamp.now() };
+  await setDoc(subjectRef, newSubject);
+  return { ...newSubject, id: subjectRef.id };
+};
+
+export const updateSubject = async (id, data) => {
+  const subjectRef = doc(db, "subjects", id);
+  await updateDoc(subjectRef, data);
+};
+
+export const deleteSubject = async (id) => {
+  const subjectRef = doc(db, "subjects", id);
+  await deleteDoc(subjectRef);
 };
 
 // ==================== CONFIG ====================

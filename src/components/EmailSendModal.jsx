@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Loader2, Send, Check, AlertCircle } from 'lucide-react';
-import { getEmailTemplate } from '../firebase/services';
+import { getEmailTemplate, getSubjects } from '../firebase/services';
 import { personalizeGreeting, getDefaultSubject } from '../utils/emailUtils';
 import { sendEmail } from '../services/gmailService';
 
@@ -10,6 +10,7 @@ import { sendEmail } from '../services/gmailService';
 // `onSent` se dispara solo si el envío fue exitoso (ej: marcar status "Sent").
 const EmailSendModal = ({ isOpen, company, sector, onClose, onSent }) => {
   const [subject, setSubject] = useState('');
+  const [subjectOptions, setSubjectOptions] = useState([]);
   const [body, setBody] = useState('');
   const [loadingTemplate, setLoadingTemplate] = useState(false);
   const [sending, setSending] = useState(false);
@@ -23,6 +24,7 @@ const EmailSendModal = ({ isOpen, company, sector, onClose, onSent }) => {
     setSendError(null);
     setSent(false);
     setSubject(getDefaultSubject(sector, company.name));
+    setSubjectOptions([]);
     setBody('');
     setLoadingTemplate(true);
 
@@ -36,6 +38,21 @@ const EmailSendModal = ({ isOpen, company, sector, onClose, onSent }) => {
       })
       .finally(() => {
         if (!cancelled) setLoadingTemplate(false);
+      });
+
+    // Subjects guardados del rubro: el primero queda preseleccionado. Si no
+    // hay ninguno, queda el default hardcodeado (editable a mano igual).
+    getSubjects()
+      .then((all) => {
+        if (cancelled) return;
+        const options = all.filter((s) => s.sector === sector);
+        setSubjectOptions(options);
+        if (options.length > 0) {
+          setSubject(personalizeGreeting(options[0].text, company.name));
+        }
+      })
+      .catch((error) => {
+        console.error('Error loading subjects:', error);
       });
 
     return () => {
@@ -99,6 +116,27 @@ const EmailSendModal = ({ isOpen, company, sector, onClose, onSent }) => {
           {/* Asunto */}
           <div>
             <label className="block text-sm font-medium text-dark-subtext mb-1.5">Asunto</label>
+            {subjectOptions.length > 0 && (() => {
+              const selectedId =
+                subjectOptions.find((o) => personalizeGreeting(o.text, company.name) === subject)?.id ?? 'custom';
+              return (
+                <select
+                  value={selectedId}
+                  onChange={(e) => {
+                    const option = subjectOptions.find((o) => o.id === e.target.value);
+                    if (option) setSubject(personalizeGreeting(option.text, company.name));
+                  }}
+                  className="w-full px-4 py-2.5 mb-2 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors cursor-pointer"
+                >
+                  {subjectOptions.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {personalizeGreeting(o.text, company.name)}
+                    </option>
+                  ))}
+                  {selectedId === 'custom' && <option value="custom">Personalizado</option>}
+                </select>
+              );
+            })()}
             <input
               type="text"
               value={subject}

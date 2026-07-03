@@ -8,12 +8,18 @@ const DEFAULT_SUBJECTS = {
   kyc: 'KYC Analyst Application - Belu & Marco',
 };
 
-// Reemplaza el saludo genérico ("Hi Team," / "Hello Team,") del template
-// por uno con el nombre de la empresa destinataria.
+// Inserta el nombre de la empresa destinataria en el template. Soporta dos
+// mecanismos: el placeholder {company} (o {{company}}) en cualquier parte del
+// texto, o —si no hay placeholder— reemplaza el saludo genérico inicial
+// ("Dear/Hi/Hello Team,") conservando la palabra de saludo original.
 export function personalizeGreeting(content, companyName) {
   if (!content) return '';
   if (!companyName) return content;
-  return content.replace(/^(Hi|Hello)\s+Team,?/i, `Hello ${companyName} Team,`);
+
+  const withPlaceholders = content.replace(/\{\{?\s*company\s*\}\}?/gi, companyName);
+  if (withPlaceholders !== content) return withPlaceholders;
+
+  return content.replace(/^(Dear|Hi|Hello)\s+Team(,?)/i, `$1 ${companyName} Team$2`);
 }
 
 // Asunto por defecto según el rubro. Para rubros sin asunto predefinido
