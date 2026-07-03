@@ -876,6 +876,14 @@ const TrackerView = () => {
         company={emailCompany}
         sector={sector}
         onClose={() => setEmailCompany(null)}
+        onSent={async (company) => {
+          // El email ya salió: si esto falla solo queda el status sin actualizar.
+          try {
+            await updateCurrentData(company.id, { status: 'Sent' });
+          } catch (error) {
+            console.error('Error marking company as Sent:', error);
+          }
+        }}
       />
     </div>
   );

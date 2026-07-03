@@ -7,7 +7,8 @@ import { sendEmail } from '../services/gmailService';
 // Modal de preview/envío de email para una empresa puntual.
 // Autocompleta asunto y cuerpo según el rubro (sector) de la empresa,
 // pero ambos quedan editables antes de confirmar el envío.
-const EmailSendModal = ({ isOpen, company, sector, onClose }) => {
+// `onSent` se dispara solo si el envío fue exitoso (ej: marcar status "Sent").
+const EmailSendModal = ({ isOpen, company, sector, onClose, onSent }) => {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [loadingTemplate, setLoadingTemplate] = useState(false);
@@ -49,6 +50,7 @@ const EmailSendModal = ({ isOpen, company, sector, onClose }) => {
     try {
       await sendEmail({ to: company.email, subject, body });
       setSent(true);
+      onSent?.(company);
       setTimeout(() => {
         onClose();
       }, 1200);

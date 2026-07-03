@@ -21,6 +21,16 @@
     background-color: #131314;
     color: #E3E3E3;
   }
+
+  /* iOS Safari hace auto-zoom al enfocar campos con font-size < 16px.
+     @supports (-webkit-touch-callout) aplica solo en iOS. */
+  @supports (-webkit-touch-callout: none) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
 }
 
 @layer utilities {
