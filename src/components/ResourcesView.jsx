@@ -277,7 +277,7 @@ const ResourcesView = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Toggles */}
       <div className="mb-8">
-        <SectorToggle sector={sector} onSectorChange={setSector} showAddButton={false} />
+        <SectorToggle sector={sector} onSectorChange={setSector} showAddButton={false} includeKyc={true} />
       </div>
 
       {/* Download Section */}

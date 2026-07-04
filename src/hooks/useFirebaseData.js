@@ -166,7 +166,8 @@ export const useKyc = () => {
 export const useTemplates = () => {
   const [templates, setTemplates] = useState({
     winery: { email: '', coverLetter: '' },
-    housekeeping: { email: '', coverLetter: '' }
+    housekeeping: { email: '', coverLetter: '' },
+    kyc: { email: '', coverLetter: '' }
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -187,6 +188,10 @@ export const useTemplates = () => {
         housekeeping: {
           email: data['housekeeping-email']?.content || '',
           coverLetter: data['housekeeping-cover-letter']?.content || ''
+        },
+        kyc: {
+          email: data['kyc-email']?.content || '',
+          coverLetter: data['kyc-cover-letter']?.content || ''
         }
       });
       setError(null);
