@@ -1,8 +1,20 @@
 import { useState, useEffect } from 'react';
-import { X, Loader2, Send, Check, AlertCircle } from 'lucide-react';
-import { getEmailTemplate, getSubjects } from '../firebase/services';
+import { X, Loader2, Send, Check, AlertCircle, Paperclip } from 'lucide-react';
+import { getEmailTemplate, getSubjects, getResumes } from '../firebase/services';
 import { personalizeGreeting, getDefaultSubject } from '../utils/emailUtils';
 import { sendEmail } from '../services/gmailService';
+
+// Descarga un archivo estático del sitio y lo devuelve en base64 (para adjuntarlo).
+const fetchAsBase64 = async (path) => {
+  const response = await fetch(path);
+  if (!response.ok) throw new Error(`No se pudo leer ${path}`);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
+};
 
 // Modal de preview/envío de email para una empresa puntual.
 // Autocompleta asunto y cuerpo según el rubro (sector) de la empresa,
@@ -16,6 +28,8 @@ const EmailSendModal = ({ isOpen, company, sector, onClose, onSent }) => {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState(null);
   const [sent, setSent] = useState(false);
+  const [sectorResumes, setSectorResumes] = useState([]);
+  const [attachResumes, setAttachResumes] = useState(true);
 
   useEffect(() => {
     if (!isOpen || !company) return;
@@ -27,6 +41,18 @@ const EmailSendModal = ({ isOpen, company, sector, onClose, onSent }) => {
     setSubjectOptions([]);
     setBody('');
     setLoadingTemplate(true);
+    setAttachResumes(true);
+    setSectorResumes([]);
+
+    // CVs del rubro (config/app): solo housekeeping y winery tienen resumes.
+    getResumes()
+      .then((all) => {
+        if (cancelled) return;
+        setSectorResumes(all.filter((r) => r.type?.toLowerCase() === sector));
+      })
+      .catch((error) => {
+        console.error('Error loading resumes:', error);
+      });
 
     getEmailTemplate(sector)
       .then((content) => {
@@ -65,7 +91,17 @@ const EmailSendModal = ({ isOpen, company, sector, onClose, onSent }) => {
     setSending(true);
     setSendError(null);
     try {
-      await sendEmail({ to: company.email, subject, body });
+      let attachments;
+      if (attachResumes && sectorResumes.length > 0) {
+        attachments = await Promise.all(
+          sectorResumes.map(async (resume) => ({
+            filename: resume.file,
+            contentType: 'application/pdf',
+            data: await fetchAsBase64(resume.path),
+          }))
+        );
+      }
+      await sendEmail({ to: company.email, subject, body, attachments });
       setSent(true);
       onSent?.(company);
       setTimeout(() => {
@@ -162,6 +198,35 @@ const EmailSendModal = ({ isOpen, company, sector, onClose, onSent }) => {
               />
             )}
           </div>
+
+          {/* Adjuntar CVs del rubro (no aplica a kyc, que no tiene resumes) */}
+          {sectorResumes.length > 0 && (
+            <div className="bg-dark-bg border border-dark-hover rounded-xl p-4">
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={attachResumes}
+                  onChange={(e) => setAttachResumes(e.target.checked)}
+                  disabled={sending}
+                  className="w-4 h-4 accent-accent cursor-pointer"
+                />
+                <span className="text-sm font-medium flex items-center gap-2">
+                  <Paperclip size={15} className="text-accent" />
+                  ¿Adjuntamos los currículums?
+                </span>
+              </label>
+              {attachResumes && (
+                <ul className="mt-2.5 ml-7 space-y-1">
+                  {sectorResumes.map((resume) => (
+                    <li key={resume.id} className="text-xs text-dark-subtext flex items-center gap-1.5">
+                      <Check size={12} className="text-accent flex-shrink-0" />
+                      {resume.file}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}

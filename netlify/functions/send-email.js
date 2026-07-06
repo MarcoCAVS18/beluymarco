@@ -30,16 +30,40 @@ async function getAccessToken() {
 }
 
 // Arma el mensaje RFC 2822 y lo codifica en base64url, como pide la Gmail API.
-function buildRawMessage({ to, subject, body }) {
+// Si hay attachments ([{ filename, contentType, data(base64) }]) arma un
+// multipart/mixed; si no, el mismo text/plain de siempre.
+function buildRawMessage({ to, subject, body, attachments }) {
   const encodedSubject = `=?UTF-8?B?${Buffer.from(subject, 'utf-8').toString('base64')}?=`;
-  const message = [
-    `To: ${to}`,
-    `Subject: ${encodedSubject}`,
-    'MIME-Version: 1.0',
-    'Content-Type: text/plain; charset="UTF-8"',
-    '',
-    body,
-  ].join('\r\n');
+  const headers = [`To: ${to}`, `Subject: ${encodedSubject}`, 'MIME-Version: 1.0'];
+
+  let message;
+  if (Array.isArray(attachments) && attachments.length > 0) {
+    const boundary = `mixed_${Date.now().toString(36)}`;
+    const parts = [
+      ...headers,
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/plain; charset="UTF-8"',
+      '',
+      body,
+    ];
+    for (const att of attachments) {
+      parts.push(
+        `--${boundary}`,
+        `Content-Type: ${att.contentType || 'application/octet-stream'}; name="${att.filename}"`,
+        'Content-Transfer-Encoding: base64',
+        `Content-Disposition: attachment; filename="${att.filename}"`,
+        '',
+        // Líneas de máx. 76 caracteres, como pide RFC 2045.
+        att.data.replace(/.{1,76}/g, '$&\r\n').trimEnd(),
+      );
+    }
+    parts.push(`--${boundary}--`);
+    message = parts.join('\r\n');
+  } else {
+    message = [...headers, 'Content-Type: text/plain; charset="UTF-8"', '', body].join('\r\n');
+  }
 
   return Buffer.from(message)
     .toString('base64')
@@ -60,7 +84,7 @@ export const handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ success: false, error: 'JSON invalido' }) };
   }
 
-  const { to, subject, body } = payload;
+  const { to, subject, body, attachments } = payload;
 
   if (!to || !subject || !body) {
     return {
@@ -71,7 +95,7 @@ export const handler = async (event) => {
 
   try {
     const accessToken = await getAccessToken();
-    const raw = buildRawMessage({ to, subject, body });
+    const raw = buildRawMessage({ to, subject, body, attachments });
 
     const response = await fetch(SEND_URL, {
       method: 'POST',

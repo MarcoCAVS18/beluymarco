@@ -46,3 +46,6 @@ kyc.json
 
 # Patches sueltos
 *.patch
+
+# Notas locales de la base de datos (no commitear)
+MEMORY.md

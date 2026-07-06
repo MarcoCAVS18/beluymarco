@@ -1,11 +1,12 @@
 // src/services/gmailService.js
 // Envío de emails vía Gmail API, usando la Netlify Function como backend.
 
-export const sendEmail = async ({ to, subject, body }) => {
+// `attachments` es opcional: [{ filename, contentType, data }] con data en base64.
+export const sendEmail = async ({ to, subject, body, attachments }) => {
   const response = await fetch('/.netlify/functions/send-email', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ to, subject, body }),
+    body: JSON.stringify({ to, subject, body, attachments }),
   });
 
   const data = await response.json().catch(() => ({}));
