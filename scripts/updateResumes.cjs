@@ -1,73 +1,87 @@
 /**
- * updateResumes.cjs — versión CommonJS (usa firebase-compat para Node 22).
+ * updateResumes.cjs — actualiza SOLO el campo `resumes` de config/app.
  *
- * SCRIPT SEGURO para actualizar los resumes de Housekeeping en config/app.
- * NUNCA toca otros campos del documento (flags, statusOptions, coverLetters, etc).
- * Lee el array `resumes` actual y solo reemplaza las entradas de Housekeeping;
- * las de Winery (y cualquier otra) quedan exactamente como están.
+ * Usa la API REST de Firestore con token OAuth de gcloud (las security rules
+ * solo permiten la cuenta de Google vía la web app, así que el SDK cliente
+ * no sirve desde Node). PATCH con updateMask limitado a `resumes`: el resto
+ * del documento (flags, statusOptions, otherDocuments, etc.) queda intacto.
+ *
+ * Requisitos: gcloud autenticado con marcopiermatei1@gmail.com. No usa .env.
  *
  * Uso:
- *   node --env-file=.env scripts/updateResumes.cjs            # dry-run
- *   node --env-file=.env scripts/updateResumes.cjs --execute  # aplica
+ *   node scripts/updateResumes.cjs            # dry-run
+ *   node scripts/updateResumes.cjs --execute  # aplica
+ *
+ * Para futuros cambios de CV: editar NEW_RESUMES acá abajo (los nombres deben
+ * coincidir EXACTO con los archivos en public/resumes/) y correr con --execute.
  */
 
 const fs = require('fs');
 const path = require('path');
-const firebase = require('../node_modules/firebase/firebase-compat.js');
+const { execFileSync } = require('child_process');
 
-const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY,
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.VITE_FIREBASE_APP_ID,
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
+const PROJECT_ID = 'emails---trabajos';
+const DOC_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/config/app`;
 const DRY_RUN = !process.argv.includes('--execute');
 
-// Nombres nuevos (July 2026). Ojo: el de Belu es SIN "copia".
-const NEW_HK_RESUMES = {
-  Belu: 'Resume HK - July 2026 - Maria Belen Corzo.pdf',
-  Marco: 'Resume HK - July 2026 - Marco Piermatei.pdf',
-};
+// Estado deseado del array completo. Winery y Housekeeping, en este orden.
+const NEW_RESUMES = [
+  { id: 1, type: 'Winery', person: 'Belu', file: 'Resume W - July 2026 - Maria Belen Corzo.pdf' },
+  { id: 2, type: 'Winery', person: 'Marco', file: 'Resume W - July 2026 - Marco Piermatei.pdf' },
+  { id: 3, type: 'Housekeeping', person: 'Belu', file: 'Resume HK - July 2026 - Maria Belen Corzo.pdf' },
+  { id: 4, type: 'Housekeeping', person: 'Marco', file: 'Resume HK - July 2026 - Marco Piermatei.pdf' },
+];
+
+function getToken() {
+  try {
+    return execFileSync('gcloud', ['auth', 'print-access-token'], { encoding: 'utf8' }).trim();
+  } catch {
+    console.error('❌ No pude obtener token de gcloud. Corré: gcloud auth login');
+    process.exit(1);
+  }
+}
+
+const toFirestore = r => ({
+  mapValue: {
+    fields: {
+      id: { integerValue: String(r.id) },
+      type: { stringValue: r.type },
+      person: { stringValue: r.person },
+      file: { stringValue: r.file },
+      path: { stringValue: `/resumes/${r.file}` },
+    },
+  },
+});
 
 async function main() {
-  // Verificar que los PDFs nuevos existan en public/resumes antes de tocar nada
-  for (const file of Object.values(NEW_HK_RESUMES)) {
-    const fullPath = path.join(__dirname, '..', 'public', 'resumes', file);
-    if (!fs.existsSync(fullPath)) {
-      console.error(`❌ No existe public/resumes/${file} — abortando sin tocar Firestore.`);
+  for (const r of NEW_RESUMES) {
+    if (!fs.existsSync(path.join(__dirname, '..', 'public', 'resumes', r.file))) {
+      console.error(`❌ No existe public/resumes/${r.file} — abortando sin tocar Firestore.`);
       process.exit(1);
     }
   }
 
-  const configRef = db.collection('config').doc('app');
-  const snap = await configRef.get();
-  if (!snap.exists) {
-    console.error('❌ No existe el documento config/app — abortando.');
+  const token = getToken();
+  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+  const res = await fetch(`${DOC_URL}?mask.fieldPaths=resumes`, { headers });
+  if (!res.ok) {
+    console.error(`❌ Error leyendo config/app (${res.status}):`, await res.text());
     process.exit(1);
   }
+  const current = (await res.json()).fields?.resumes?.arrayValue?.values || [];
 
-  const current = snap.data().resumes || [];
   console.log('📄 Resumes actuales en Firestore:');
-  current.forEach(r => console.log(`   [${r.id}] ${r.type} / ${r.person}: ${r.file}`));
-
-  const updated = current.map(r => {
-    if (r.type === 'Housekeeping' && NEW_HK_RESUMES[r.person]) {
-      const file = NEW_HK_RESUMES[r.person];
-      return { ...r, file, path: `/resumes/${file}` };
-    }
-    return r; // Winery y cualquier otra entrada quedan intactas
+  const currentFiles = current.map(v => {
+    const f = v.mapValue.fields;
+    console.log(`   [${f.id.integerValue}] ${f.type.stringValue} / ${f.person.stringValue}: ${f.file.stringValue}`);
+    return f.file.stringValue;
   });
 
-  const changed = updated.filter((r, i) => r.file !== current[i].file);
+  const changed = NEW_RESUMES.filter(r => !currentFiles.includes(r.file));
   if (changed.length === 0) {
     console.log('✅ Firestore ya está al día, nada para cambiar.');
-    process.exit(0);
+    return;
   }
 
   console.log('\n🔁 Cambios a aplicar:');
@@ -75,13 +89,22 @@ async function main() {
 
   if (DRY_RUN) {
     console.log('\n🔍 Dry-run: no se escribió nada. Corré con --execute para aplicar.');
-    process.exit(0);
+    return;
   }
 
-  // update() solo pisa el campo `resumes`; el resto del documento queda intacto
-  await configRef.update({ resumes: updated });
+  const body = JSON.stringify({
+    fields: { resumes: { arrayValue: { values: NEW_RESUMES.map(toFirestore) } } },
+  });
+  const patch = await fetch(`${DOC_URL}?updateMask.fieldPaths=resumes&currentDocument.exists=true`, {
+    method: 'PATCH',
+    headers,
+    body,
+  });
+  if (!patch.ok) {
+    console.error(`❌ Error en el PATCH (${patch.status}):`, await patch.text());
+    process.exit(1);
+  }
   console.log('\n✅ Campo resumes actualizado en config/app. El resto del doc quedó intacto.');
-  process.exit(0);
 }
 
 main().catch(err => {

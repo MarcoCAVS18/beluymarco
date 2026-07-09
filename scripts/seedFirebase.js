@@ -387,8 +387,8 @@ async function seedConfig() {
       { label: 'Rejected', color: 'bg-red-600' },
     ],
     resumes: [
-      { id: 1, type: 'Winery', person: 'Belu', file: 'Resume W - January 2026 - Maria Belen Corzo.pdf', path: '/resumes/Resume W - January 2026 - Maria Belen Corzo.pdf' },
-      { id: 2, type: 'Winery', person: 'Marco', file: 'Resume W - January 2026 - Marco Piermatei.pdf', path: '/resumes/Resume W - January 2026 - Marco Piermatei.pdf' },
+      { id: 1, type: 'Winery', person: 'Belu', file: 'Resume W - July 2026 - Maria Belen Corzo.pdf', path: '/resumes/Resume W - July 2026 - Maria Belen Corzo.pdf' },
+      { id: 2, type: 'Winery', person: 'Marco', file: 'Resume W - July 2026 - Marco Piermatei.pdf', path: '/resumes/Resume W - July 2026 - Marco Piermatei.pdf' },
       { id: 3, type: 'Housekeeping', person: 'Belu', file: 'Resume HK - July 2026 - Maria Belen Corzo.pdf', path: '/resumes/Resume HK - July 2026 - Maria Belen Corzo.pdf' },
       { id: 4, type: 'Housekeeping', person: 'Marco', file: 'Resume HK - July 2026 - Marco Piermatei.pdf', path: '/resumes/Resume HK - July 2026 - Marco Piermatei.pdf' },
     ],
