@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Copy, Check, FileDown, Edit3, Save, X, File, Loader2, FileText, Plus, Trash2 } from 'lucide-react';
 import { useTemplates, useConfig, useSubjects } from '../hooks/useFirebaseData';
+import { downloadDocument } from '../services/documentService';
 import SectorToggle from './SectorToggle';
+
+const handleDownload = (docPath, filename) => {
+  downloadDocument(docPath, filename).catch((error) => {
+    console.error('Error downloading document:', error);
+  });
+};
 
 const CopyBlock = ({ title, text, onTextChange, downloadPath }) => {
   const [copied, setCopied] = useState(false);
@@ -65,15 +72,14 @@ const CopyBlock = ({ title, text, onTextChange, downloadPath }) => {
             <>
               {/* Botón PDF solo si existe la ruta */}
               {downloadPath && (
-                <a
-                  href={downloadPath}
-                  download
+                <button
+                  onClick={() => handleDownload(downloadPath, downloadPath.split('/').pop())}
                   className="flex items-center gap-1.5 text-xs font-medium bg-purple-900/40 text-purple-200 hover:bg-purple-900/60 px-3 py-1.5 rounded-full transition-all duration-200 hover:scale-105 border border-purple-500/30"
                   title="Download PDF Version"
                 >
                   <FileText size={14} />
                   PDF
-                </a>
+                </button>
               )}
 
               <button
@@ -288,14 +294,13 @@ const ResourcesView = () => {
               <p className="font-semibold">{resume.person}'s Resume</p>
               <p className="text-xs text-dark-subtext uppercase">{resume.type}</p>
             </div>
-            <a
-              href={resume.path}
-              download={resume.file}
+            <button
+              onClick={() => handleDownload(resume.path, resume.file)}
               className="p-2 bg-dark-bg rounded-full text-dark-text group-hover:text-accent transition-all duration-200 hover:scale-110"
               title="Download resume"
             >
               <FileDown size={20} className="group-hover:animate-bounce" />
-            </a>
+            </button>
           </div>
         ))}
       </div>
@@ -338,14 +343,13 @@ const ResourcesView = () => {
                 </p>
                 <p className="text-xs text-dark-subtext mt-1">{doc.description}</p>
               </div>
-              <a
-                href={doc.path}
-                download={doc.file}
+              <button
+                onClick={() => handleDownload(doc.path, doc.file)}
                 className="p-2 bg-dark-bg rounded-full text-dark-text group-hover:text-accent transition-all duration-200 hover:scale-110"
                 title={`Download ${doc.name}`}
               >
                 <FileDown size={20} className="group-hover:animate-bounce" />
-              </a>
+              </button>
             </div>
           ))}
         </div>

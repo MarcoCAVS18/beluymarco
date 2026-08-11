@@ -3,18 +3,7 @@ import { X, Loader2, Send, Check, AlertCircle, Paperclip } from 'lucide-react';
 import { getEmailTemplate, getSubjects, getResumes } from '../firebase/services';
 import { personalizeGreeting, getDefaultSubject } from '../utils/emailUtils';
 import { sendEmail } from '../services/gmailService';
-
-// Descarga un archivo estático del sitio y lo devuelve en base64 (para adjuntarlo).
-const fetchAsBase64 = async (path) => {
-  const response = await fetch(path);
-  if (!response.ok) throw new Error(`No se pudo leer ${path}`);
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  let binary = '';
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
-  return btoa(binary);
-};
+import { fetchDocumentAsBase64 } from '../services/documentService';
 
 // Modal de preview/envío de email para una empresa puntual.
 // Autocompleta asunto y cuerpo según el rubro (sector) de la empresa,
@@ -97,7 +86,7 @@ const EmailSendModal = ({ isOpen, company, sector, onClose, onSent }) => {
           sectorResumes.map(async (resume) => ({
             filename: resume.file,
             contentType: 'application/pdf',
-            data: await fetchAsBase64(resume.path),
+            data: await fetchDocumentAsBase64(resume.path),
           }))
         );
       }

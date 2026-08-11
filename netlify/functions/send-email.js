@@ -1,10 +1,33 @@
 // netlify/functions/send-email.js
 // Envía un email desde la cuenta de Gmail del usuario usando el refresh
 // token guardado en las variables de entorno de Netlify (uso personal,
-// un solo usuario).
+// un solo usuario). Requiere un ID token de Firebase Auth de la cuenta
+// autorizada (mismo esquema que firestore.rules) para evitar que cualquiera
+// con la URL de la function pueda mandar correos desde esta cuenta.
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const SEND_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
+const LOOKUP_URL = 'https://identitytoolkit.googleapis.com/v1/accounts:lookup';
+
+async function verifyAuthorizedUser(authHeader) {
+  const idToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!idToken) return false;
+
+  const apiKey = process.env.VITE_FIREBASE_API_KEY;
+  const allowedEmail = process.env.VITE_ALLOWED_EMAIL || 'marcopiermatei1@gmail.com';
+
+  const response = await fetch(`${LOOKUP_URL}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ idToken }),
+  });
+
+  if (!response.ok) return false;
+
+  const data = await response.json();
+  const user = data.users?.[0];
+  return user?.email === allowedEmail;
+}
 
 async function getAccessToken() {
   const params = new URLSearchParams({
@@ -75,6 +98,12 @@ function buildRawMessage({ to, subject, body, attachments }) {
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ success: false, error: 'Metodo no permitido' }) };
+  }
+
+  const authHeader = event.headers?.authorization || event.headers?.Authorization;
+  const authorized = await verifyAuthorizedUser(authHeader).catch(() => false);
+  if (!authorized) {
+    return { statusCode: 401, body: JSON.stringify({ success: false, error: 'No autorizado' }) };
   }
 
   let payload;
