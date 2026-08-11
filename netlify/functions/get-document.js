@@ -7,8 +7,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ASSETS_DIR = path.join(__dirname, 'assets');
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+const ASSETS_DIR = path.join(currentDir, 'assets');
 const ALLOWED_PREFIXES = ['resumes/', 'documents/', 'cover/'];
 const LOOKUP_URL = 'https://identitytoolkit.googleapis.com/v1/accounts:lookup';
 
