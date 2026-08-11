@@ -5,10 +5,15 @@
 
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const currentDir = path.dirname(fileURLToPath(import.meta.url));
-const ASSETS_DIR = path.join(currentDir, 'assets');
+// Netlify empaqueta esta function "aplanada" en /var/task/get-document.js,
+// pero los included_files (netlify.toml) preservan su ruta original del
+// repo bajo /var/task/. import.meta.url no sirve acá: al bundlear a CJS
+// queda undefined, así que resolvemos contra process.cwd() con fallbacks.
+const ASSETS_DIR = [
+  path.join(process.cwd(), 'netlify/functions/assets'),
+  path.join(process.cwd(), 'assets'),
+].find((dir) => fs.existsSync(dir)) || path.join(process.cwd(), 'netlify/functions/assets');
 const ALLOWED_PREFIXES = ['resumes/', 'documents/', 'cover/'];
 const LOOKUP_URL = 'https://identitytoolkit.googleapis.com/v1/accounts:lookup';
 
