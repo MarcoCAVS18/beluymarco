@@ -13,7 +13,8 @@
  *   node scripts/updateResumes.cjs --execute  # aplica
  *
  * Para futuros cambios de CV: editar NEW_RESUMES acá abajo (los nombres deben
- * coincidir EXACTO con los archivos en public/resumes/) y correr con --execute.
+ * coincidir EXACTO con los archivos en netlify/functions/assets/resumes/) y
+ * correr con --execute.
  */
 
 const fs = require('fs');
@@ -28,8 +29,8 @@ const DRY_RUN = !process.argv.includes('--execute');
 const NEW_RESUMES = [
   { id: 1, type: 'Winery', person: 'Belu', file: 'Resume W - July 2026 - Maria Belen Corzo.pdf' },
   { id: 2, type: 'Winery', person: 'Marco', file: 'Resume W - July 2026 - Marco Piermatei.pdf' },
-  { id: 3, type: 'Housekeeping', person: 'Belu', file: 'Resume HK - July 2026 - Maria Belen Corzo.pdf' },
-  { id: 4, type: 'Housekeeping', person: 'Marco', file: 'Resume HK - July 2026 - Marco Piermatei.pdf' },
+  { id: 3, type: 'Housekeeping', person: 'Belu', file: 'Resume HK - September 2026 - Maria Belen Corzo.pdf' },
+  { id: 4, type: 'Housekeeping', person: 'Marco', file: 'Resume HK - September 2026 - Marco Piermatei.pdf' },
 ];
 
 function getToken() {
@@ -55,8 +56,8 @@ const toFirestore = r => ({
 
 async function main() {
   for (const r of NEW_RESUMES) {
-    if (!fs.existsSync(path.join(__dirname, '..', 'public', 'resumes', r.file))) {
-      console.error(`❌ No existe public/resumes/${r.file} — abortando sin tocar Firestore.`);
+    if (!fs.existsSync(path.join(__dirname, '..', 'netlify', 'functions', 'assets', 'resumes', r.file))) {
+      console.error(`❌ No existe netlify/functions/assets/resumes/${r.file} — abortando sin tocar Firestore.`);
       process.exit(1);
     }
   }
