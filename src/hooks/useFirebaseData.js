@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { COUNTRIES } from '../data/countries';
 import {
-  getWineries,
-  getHousekeeping,
-  getKyc,
+  getCompaniesByCountry,
+  getCountryCounts,
   updateWinery,
   updateHousekeeping,
   updateKyc,
@@ -22,145 +22,157 @@ import {
   deleteSubject
 } from '../firebase/services';
 
-export const useWineries = () => {
-  const [wineries, setWineries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+// Cache a nivel de modulo: lo ya leido se comparte entre pestañas (Tracker/Mapa)
+// y entre cambios de rubro, asi no se vuelve a leer de Firestore.
+const companyCache = {}; // { [coleccion]: { [pais]: empresas[] } }
+const countsCache = {}; // { [coleccion]: { [pais]: cantidad } }
+const SELECTION_KEY = 'selectedCountries';
 
-  useEffect(() => {
-    loadWineries();
-  }, []);
-
-  const loadWineries = async () => {
-    try {
-      setLoading(true);
-      const data = await getWineries();
-      setWineries(data);
-      setError(null);
-    } catch (err) {
-      console.error('Error loading wineries:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateWineryData = async (id, updates) => {
-    try {
-      await updateWinery(id, updates);
-      setWineries(prev => prev.map(w => w.id === id ? { ...w, ...updates } : w));
-    } catch (err) {
-      console.error('Error updating winery:', err);
-      throw err;
-    }
-  };
-
-  const createWineryData = async (data) => {
-    try {
-      const newWinery = await createWinery(data);
-      setWineries(prev => [...prev, newWinery]);
-      return newWinery;
-    } catch (err) {
-      console.error('Error creating winery:', err);
-      throw err;
-    }
-  };
-
-  return { wineries, loading, error, updateWinery: updateWineryData, createWinery: createWineryData, reload: loadWineries };
+const readSelection = (collectionName) => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(`${SELECTION_KEY}:${collectionName}`));
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
 };
 
-export const useHousekeeping = () => {
-  const [housekeeping, setHousekeeping] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+// Paises elegidos por rubro, recordados entre visitas. Vacio = no se carga nada.
+export const useSelectedCountries = (collectionName) => {
+  const [selected, setSelected] = useState(() => readSelection(collectionName));
 
   useEffect(() => {
-    loadHousekeeping();
-  }, []);
+    setSelected(readSelection(collectionName));
+  }, [collectionName]);
 
-  const loadHousekeeping = async () => {
+  const update = (next) => {
+    setSelected(next);
     try {
-      setLoading(true);
-      const data = await getHousekeeping();
-      setHousekeeping(data);
-      setError(null);
-    } catch (err) {
-      console.error('Error loading housekeeping:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      localStorage.setItem(`${SELECTION_KEY}:${collectionName}`, JSON.stringify(next));
+    } catch {
+      // sin localStorage la seleccion solo dura la sesion
     }
   };
 
-  const updateHousekeepingData = async (id, updates) => {
-    try {
-      await updateHousekeeping(id, updates);
-      setHousekeeping(prev => prev.map(h => h.id === id ? { ...h, ...updates } : h));
-    } catch (err) {
-      console.error('Error updating housekeeping:', err);
-      throw err;
-    }
-  };
-
-  const createHousekeepingData = async (data) => {
-    try {
-      const newHousekeeping = await createHousekeeping(data);
-      setHousekeeping(prev => [...prev, newHousekeeping]);
-      return newHousekeeping;
-    } catch (err) {
-      console.error('Error creating housekeeping:', err);
-      throw err;
-    }
-  };
-
-  return { housekeeping, loading, error, updateHousekeeping: updateHousekeepingData, createHousekeeping: createHousekeepingData, reload: loadHousekeeping };
+  return [selected, update];
 };
 
-export const useKyc = () => {
-  const [kyc, setKyc] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+// Cantidad de empresas por pais (para mostrar en el selector sin leer los documentos).
+export const useCountryCounts = (collectionName, enabled = true) => {
+  // El estado solo fuerza el re-render cuando llegan los conteos; el dato vive en countsCache
+  const [, setVersion] = useState(0);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    loadKyc();
-  }, []);
+    if (!enabled || countsCache[collectionName]) return;
+    let cancelled = false;
+    getCountryCounts(collectionName, [...COUNTRIES.map(c => c.code), 'XX'])
+      .then(result => {
+        countsCache[collectionName] = result;
+        if (!cancelled) setVersion(v => v + 1);
+      })
+      .catch(err => {
+        console.error(`Error contando ${collectionName}:`, err);
+        if (!cancelled) setFailed(true);
+      });
+    return () => { cancelled = true; };
+  }, [collectionName, enabled]);
 
-  const loadKyc = async () => {
+  const counts = countsCache[collectionName];
+  return { counts: counts || {}, loading: enabled && !counts && !failed, failed };
+};
+
+const useCompanies = (collectionName, { countries = [], enabled = true } = {}, api) => {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const countriesKey = [...countries].sort().join(',');
+
+  const collect = useCallback(() => {
+    const cache = companyCache[collectionName] || {};
+    return countries.flatMap(code => cache[code] || []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionName, countriesKey]);
+
+  const load = useCallback(async (force = false) => {
+    if (!enabled) return;
+    const cache = (companyCache[collectionName] ||= {});
+    if (force) countries.forEach(code => { delete cache[code]; });
+    const missing = countries.filter(code => !cache[code]);
+
+    if (missing.length === 0) {
+      setItems(collect());
+      return;
+    }
     try {
       setLoading(true);
-      const data = await getKyc();
-      setKyc(data);
+      const results = await Promise.all(missing.map(code => getCompaniesByCountry(collectionName, code)));
+      missing.forEach((code, i) => { cache[code] = results[i]; });
+      setItems(collect());
       setError(null);
     } catch (err) {
-      console.error('Error loading kyc:', err);
+      console.error(`Error loading ${collectionName}:`, err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collectionName, countriesKey, enabled]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Aplica el cambio al cache y a la lista en pantalla
+  const patchCache = (id, updates) => {
+    Object.values(companyCache[collectionName] || {}).forEach(list => {
+      const idx = list.findIndex(c => c.id === id);
+      if (idx !== -1) list[idx] = { ...list[idx], ...updates };
+    });
+    setItems(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
   };
 
-  const updateKycData = async (id, updates) => {
+  const updateData = async (id, updates) => {
     try {
-      await updateKyc(id, updates);
-      setKyc(prev => prev.map(k => k.id === id ? { ...k, ...updates } : k));
+      await api.update(id, updates);
+      patchCache(id, updates);
     } catch (err) {
-      console.error('Error updating kyc:', err);
+      console.error(`Error updating ${collectionName}:`, err);
       throw err;
     }
   };
 
-  const createKycData = async (data) => {
+  const createData = async (data) => {
     try {
-      const newKyc = await createKyc(data);
-      setKyc(prev => [...prev, newKyc]);
-      return newKyc;
+      const created = await api.create(data);
+      const cache = (companyCache[collectionName] ||= {});
+      // Solo se suma al cache si ese pais ya estaba cargado; si no, se leera completo luego
+      if (cache[created.country]) cache[created.country] = [...cache[created.country], created];
+      if (countsCache[collectionName]) delete countsCache[collectionName];
+      if (countries.includes(created.country)) setItems(prev => [...prev, created]);
+      return created;
     } catch (err) {
-      console.error('Error creating kyc:', err);
+      console.error(`Error creating ${collectionName}:`, err);
       throw err;
     }
   };
 
-  return { kyc, loading, error, updateKyc: updateKycData, createKyc: createKycData, reload: loadKyc };
+  return { items, loading, error, update: updateData, create: createData, reload: () => load(true) };
+};
+
+export const useWineries = (options) => {
+  const { items, loading, error, update, create, reload } = useCompanies('wineries', options, { update: updateWinery, create: createWinery });
+  return { wineries: items, loading, error, updateWinery: update, createWinery: create, reload };
+};
+
+export const useHousekeeping = (options) => {
+  const { items, loading, error, update, create, reload } = useCompanies('housekeeping', options, { update: updateHousekeeping, create: createHousekeeping });
+  return { housekeeping: items, loading, error, updateHousekeeping: update, createHousekeeping: create, reload };
+};
+
+export const useKyc = (options) => {
+  const { items, loading, error, update, create, reload } = useCompanies('kyc', options, { update: updateKyc, create: createKyc });
+  return { kyc: items, loading, error, updateKyc: update, createKyc: create, reload };
 };
 
 export const useTemplates = () => {

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import { Loader2 } from 'lucide-react';
-import { useWineries, useHousekeeping, useConfig } from '../hooks/useFirebaseData';
+import { useWineries, useHousekeeping, useConfig, useSelectedCountries } from '../hooks/useFirebaseData';
 import SectorToggle from './SectorToggle';
 import CountryFlag from './CountryFlag';
 import 'leaflet/dist/leaflet.css';
@@ -801,8 +801,10 @@ const getCoordinates = (location, country) => {
 
 const MapView = () => {
   const [sector, setSector] = useState('winery');
-  const { wineries, loading: wineriesLoading } = useWineries();
-  const { housekeeping, loading: housekeepingLoading } = useHousekeeping();
+  // Usa los mismos paises elegidos en el Tracker para no leer colecciones enteras
+  const [selectedCountries] = useSelectedCountries(sector === 'winery' ? 'wineries' : 'housekeeping');
+  const { wineries, loading: wineriesLoading } = useWineries({ countries: selectedCountries, enabled: sector === 'winery' });
+  const { housekeeping, loading: housekeepingLoading } = useHousekeeping({ countries: selectedCountries, enabled: sector === 'housekeeping' });
   const { statusOptions = [], loading: configLoading } = useConfig();
 
   const loading = wineriesLoading || housekeepingLoading || configLoading;
@@ -843,6 +845,12 @@ const MapView = () => {
         onSectorChange={setSector}
         showAddButton={false}
       />
+
+      {selectedCountries.length === 0 && (
+        <p className="text-sm text-dark-subtext">
+          No hay países elegidos para este rubro. Elegilos en el Tracker (Filter by Country) para verlos en el mapa.
+        </p>
+      )}
 
       {/* Map Container */}
       <div className="bg-dark-sidebar rounded-2xl overflow-hidden border border-dark-hover shadow-lg">

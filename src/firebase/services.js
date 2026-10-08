@@ -7,99 +7,75 @@ import {
   updateDoc,
   deleteDoc,
   query,
+  where,
   orderBy,
+  limit,
+  getCountFromServer,
+  runTransaction,
   Timestamp
 } from "firebase/firestore";
 import { db } from "./config";
 
-// ==================== WINERIES ====================
-export const getWineries = async () => {
-  const wineriesCol = collection(db, "wineries");
-  const wineriesSnapshot = await getDocs(query(wineriesCol, orderBy("id")));
-  return wineriesSnapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
+// ==================== EMPRESAS (wineries / housekeeping / kyc) ====================
+// Las colecciones crecen a miles de documentos, asi que NUNCA se leen enteras:
+// se trae por pais (where country == X, sin orderBy para no pedir indice compuesto)
+// y se ordena por id en el cliente.
+export const getCompaniesByCountry = async (collectionName, countryCode) => {
+  const snapshot = await getDocs(
+    query(collection(db, collectionName), where("country", "==", countryCode))
+  );
+  return snapshot.docs
+    .map(d => ({ ...d.data(), docId: d.id }))
+    .sort((x, y) => (x.id || 0) - (y.id || 0));
 };
 
-export const updateWinery = async (id, data) => {
-  const wineryRef = doc(db, "wineries", id.toString());
-  await updateDoc(wineryRef, data);
+// Cantidad de empresas por pais con count() del servidor: cuesta ~1 lectura por
+// cada 1000 entradas del indice, no una por documento.
+export const getCountryCounts = async (collectionName, countryCodes) => {
+  const entries = await Promise.all(countryCodes.map(async (code) => {
+    const snap = await getCountFromServer(
+      query(collection(db, collectionName), where("country", "==", code))
+    );
+    return [code, snap.data().count];
+  }));
+  return Object.fromEntries(entries.filter(([, count]) => count > 0));
 };
 
-export const createWinery = async (data) => {
-  // Get current max ID
-  const wineries = await getWineries();
-  const maxId = wineries.reduce((max, w) => Math.max(max, w.id || 0), 0);
-  const newId = maxId + 1;
-
-  const newWinery = {
-    ...data,
-    id: newId,
-    createdAt: Timestamp.now(),
-  };
-
-  const wineryRef = doc(db, "wineries", newId.toString());
-  await setDoc(wineryRef, newWinery);
-
-  return { ...newWinery, docId: newId.toString() };
+const updateCompany = async (collectionName, id, data) => {
+  await updateDoc(doc(db, collectionName, id.toString()), data);
 };
 
-// ==================== HOUSEKEEPING ====================
-export const getHousekeeping = async () => {
-  const housekeepingCol = collection(db, "housekeeping");
-  const housekeepingSnapshot = await getDocs(query(housekeepingCol, orderBy("id")));
-  return housekeepingSnapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
+// El proximo id sale del documento con id mas alto (1 lectura, no la coleccion
+// entera). La escritura es en transaccion y falla si el id ya existe, asi que
+// nunca pisa un documento creado por otro lado (por ejemplo un script de carga).
+const createCompany = async (collectionName, data) => {
+  const top = await getDocs(
+    query(collection(db, collectionName), orderBy("id", "desc"), limit(1))
+  );
+  let newId = (top.docs[0]?.data().id || 0) + 1;
+
+  for (;;) {
+    const ref = doc(db, collectionName, newId.toString());
+    const payload = { ...data, id: newId, createdAt: Timestamp.now() };
+    try {
+      await runTransaction(db, async (tx) => {
+        if ((await tx.get(ref)).exists()) throw new Error("ID_EXISTS");
+        tx.set(ref, payload);
+      });
+      return { ...payload, docId: newId.toString() };
+    } catch (err) {
+      if (err.message !== "ID_EXISTS") throw err;
+      newId += 1;
+    }
+  }
 };
 
-export const updateHousekeeping = async (id, data) => {
-  const housekeepingRef = doc(db, "housekeeping", id.toString());
-  await updateDoc(housekeepingRef, data);
-};
-
-export const createHousekeeping = async (data) => {
-  // Get current max ID
-  const housekeepingList = await getHousekeeping();
-  const maxId = housekeepingList.reduce((max, h) => Math.max(max, h.id || 0), 0);
-  const newId = maxId + 1;
-
-  const newHousekeeping = {
-    ...data,
-    id: newId,
-    createdAt: Timestamp.now(),
-  };
-
-  const housekeepingRef = doc(db, "housekeeping", newId.toString());
-  await setDoc(housekeepingRef, newHousekeeping);
-
-  return { ...newHousekeeping, docId: newId.toString() };
-};
-
-// ==================== KYC (remoto) ====================
-export const getKyc = async () => {
-  const kycCol = collection(db, "kyc");
-  const kycSnapshot = await getDocs(query(kycCol, orderBy("id")));
-  return kycSnapshot.docs.map(doc => ({ ...doc.data(), docId: doc.id }));
-};
-
-export const updateKyc = async (id, data) => {
-  const kycRef = doc(db, "kyc", id.toString());
-  await updateDoc(kycRef, data);
-};
-
-export const createKyc = async (data) => {
-  const kycList = await getKyc();
-  const maxId = kycList.reduce((max, k) => Math.max(max, k.id || 0), 0);
-  const newId = maxId + 1;
-
-  const newKyc = {
-    ...data,
-    id: newId,
-    createdAt: Timestamp.now(),
-  };
-
-  const kycRef = doc(db, "kyc", newId.toString());
-  await setDoc(kycRef, newKyc);
-
-  return { ...newKyc, docId: newId.toString() };
-};
+export const updateWinery = (id, data) => updateCompany("wineries", id, data);
+export const createWinery = (data) => createCompany("wineries", data);
+export const updateHousekeeping = (id, data) => updateCompany("housekeeping", id, data);
+export const createHousekeeping = (data) => createCompany("housekeeping", data);
+export const updateKyc = (id, data) => updateCompany("kyc", id, data);
+export const createKyc = (data) => createCompany("kyc", data);
 
 // ==================== TEMPLATES ====================
 export const getTemplates = async () => {

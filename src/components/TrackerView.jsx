@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Check, X, Edit3, Mail, Filter, EyeOff, Eye, Loader2, CheckSquare, Square, Download, ShieldAlert, ShieldCheck, ExternalLink, Send } from 'lucide-react';
-import { useWineries, useHousekeeping, useKyc, useConfig } from '../hooks/useFirebaseData';
+import { useWineries, useHousekeeping, useKyc, useConfig, useSelectedCountries, useCountryCounts } from '../hooks/useFirebaseData';
 import { useExportCSV } from '../hooks/useExportCSV';
 import { isRecentlyAdded } from '../data/constants';
 import CountryFlag from './CountryFlag';
@@ -11,15 +11,18 @@ import SectorToggle from './SectorToggle';
 
 const TrackerView = () => {
   const [sector, setSector] = useState('winery'); // 'winery' or 'housekeeping'
-  const { wineries, loading: wineriesLoading, updateWinery, createWinery } = useWineries();
-  const { housekeeping, loading: housekeepingLoading, updateHousekeeping, createHousekeeping } = useHousekeeping();
-  const { kyc, loading: kycLoading, updateKyc, createKyc } = useKyc();
+  // Solo se leen de Firestore los paises elegidos del rubro activo (ver useFirebaseData)
+  const collectionName = sector === 'winery' ? 'wineries' : sector === 'kyc' ? 'kyc' : 'housekeeping';
+  const [selectedCountries, setSelectedCountries] = useSelectedCountries(collectionName);
+  const { counts: countryCounts } = useCountryCounts(collectionName);
+  const { wineries, loading: wineriesLoading, updateWinery, createWinery } = useWineries({ countries: selectedCountries, enabled: sector === 'winery' });
+  const { housekeeping, loading: housekeepingLoading, updateHousekeeping, createHousekeeping } = useHousekeeping({ countries: selectedCountries, enabled: sector === 'housekeeping' });
+  const { kyc, loading: kycLoading, updateKyc, createKyc } = useKyc({ countries: selectedCountries, enabled: sector === 'kyc' });
   const { statusOptions = [], loading: configLoading } = useConfig();
   const { exportToCSV } = useExportCSV();
 
   const [showHidden, setShowHidden] = useState(false);
   const [search, setSearch] = useState("");
-  const [selectedCountries, setSelectedCountries] = useState([]);
   const [showCountryFilter, setShowCountryFilter] = useState(false);
   const [selectedWinery, setSelectedWinery] = useState(null); // For Modal
   const [copiedEmail, setCopiedEmail] = useState(null);
@@ -42,13 +45,14 @@ const TrackerView = () => {
   // Get current dataset based on sector
   const currentData = sector === 'winery' ? wineries : sector === 'kyc' ? kyc : housekeeping;
   const updateCurrentData = sector === 'winery' ? updateWinery : sector === 'kyc' ? updateKyc : updateHousekeeping;
-  const loading = wineriesLoading || housekeepingLoading || kycLoading || configLoading;
+  const loading = configLoading;
+  const dataLoading = wineriesLoading || housekeepingLoading || kycLoading;
+  const needsCountry = selectedCountries.length === 0;
 
   // Get unique countries
   const uniqueCountries = useMemo(() => {
-    const countries = [...new Set(currentData.map(w => w.country))];
-    return countries.sort();
-  }, [currentData]);
+    return [...new Set([...Object.keys(countryCounts), ...selectedCountries])].sort();
+  }, [countryCounts, selectedCountries]);
 
   // Get selected items for bulk operations
   const selectedItems = useMemo(() => {
@@ -75,10 +79,10 @@ const TrackerView = () => {
 
   // Toggle country filter
   const toggleCountry = (country) => {
-    setSelectedCountries(prev =>
-      prev.includes(country)
-        ? prev.filter(c => c !== country)
-        : [...prev, country]
+    setSelectedCountries(
+      selectedCountries.includes(country)
+        ? selectedCountries.filter(c => c !== country)
+        : [...selectedCountries, country]
     );
   };
 
@@ -294,7 +298,6 @@ const TrackerView = () => {
         sector={sector}
         onSectorChange={(newSector) => {
           setSector(newSector);
-          setSelectedCountries([]);
           setSearch("");
           setSelectedIds(new Set());
           setIsSelecting(false);
@@ -368,6 +371,7 @@ const TrackerView = () => {
           >
             <Filter size={16} className={`transition-transform duration-200 ${showCountryFilter ? 'rotate-180' : ''}`} />
             Filter by Country
+            {dataLoading && <Loader2 size={14} className="animate-spin text-accent" />}
             {selectedCountries.length > 0 && (
               <span className="ml-1 px-2 py-0.5 bg-accent text-black rounded-full text-xs">
                 {selectedCountries.length}
@@ -375,7 +379,7 @@ const TrackerView = () => {
             )}
           </button>
 
-          {showCountryFilter && (
+          {(showCountryFilter || needsCountry) && (
             <div className="mt-2 p-3 bg-dark-sidebar border border-dark-hover rounded-2xl shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="flex flex-wrap gap-2">
                 {uniqueCountries.map((country) => (
@@ -390,9 +394,17 @@ const TrackerView = () => {
                   >
                     <CountryFlag code={country} size="md" />
                     <span>{country}</span>
+                    {countryCounts[country] !== undefined && (
+                      <span className="text-xs opacity-70">{countryCounts[country]}</span>
+                    )}
                   </button>
                 ))}
               </div>
+              {needsCountry && (
+                <p className="mt-3 text-sm text-dark-subtext">
+                  Elegí uno o más países para cargar sus empresas.
+                </p>
+              )}
               {selectedCountries.length > 0 && (
                 <button
                   onClick={() => setSelectedCountries([])}
