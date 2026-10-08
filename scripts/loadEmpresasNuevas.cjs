@@ -91,11 +91,10 @@ const { norm } = lib;
   const backupFile = lib.writeBackup(COLLECTION, before);
   console.log(`\n💾 Backup guardado: ${backupFile} (${before.length} docs)`);
 
-  const { created, failed } = await lib.createOnly(COLLECTION, toCreate, toFields, headers);
+  const { created, failed, createdItems } = await lib.createOnly(COLLECTION, toCreate, toFields, headers);
 
   console.log('\n🔎 Verificando que no se pisó nada...');
-  const after = await lib.fetchAll(COLLECTION, headers);
-  const problems = lib.verify(before, after, created);
+  const problems = await lib.verifyLight(COLLECTION, before, createdItems, toFields, headers);
   if (problems.length) {
     console.error(`❌ VERIFICACIÓN FALLÓ (${problems.length} problemas). Backup: ${backupFile}`);
     problems.slice(0, 20).forEach(p => console.error('   ' + p));
