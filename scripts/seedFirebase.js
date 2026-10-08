@@ -5,7 +5,7 @@
 // existentes en Firestore quedarán apuntando a empresas distintas.
 
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, doc, getDocs, setDoc, writeBatch } from "firebase/firestore";
+import { getFirestore, collection, doc, getDoc, getDocs, setDoc, writeBatch } from "firebase/firestore";
 import wineriesData from '../csvjson.json' with { type: 'json' };
 import housekeepingData from '../housekeeping.json' with { type: 'json' };
 
@@ -356,11 +356,16 @@ async function seedTemplates() {
     }
   };
 
+  // Solo crea los que faltan: los templates se editan desde la app y no se deben pisar.
+  let created = 0;
   for (const [key, value] of Object.entries(templates)) {
-    await setDoc(doc(db, "templates", key), value);
+    const ref = doc(db, "templates", key);
+    if ((await getDoc(ref)).exists()) continue;
+    await setDoc(ref, value);
+    created++;
   }
 
-  console.log(`✅ ${Object.keys(templates).length} templates seeded`);
+  console.log(`✅ ${created} templates creados (${Object.keys(templates).length - created} ya existían, sin tocar)`);
 }
 
 async function seedConfig() {
@@ -397,7 +402,13 @@ async function seedConfig() {
     ]
   };
 
-  await setDoc(doc(db, "config", "app"), config);
+  // config/app guarda resumes, flags y cover letters editados despues del seed: no se pisa.
+  const configRef = doc(db, "config", "app");
+  if ((await getDoc(configRef)).exists()) {
+    console.log('✅ Config ya existe, sin tocar');
+    return;
+  }
+  await setDoc(configRef, config);
   console.log('✅ Config seeded');
 }
 

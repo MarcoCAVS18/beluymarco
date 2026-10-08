@@ -49,3 +49,6 @@ kyc.json
 
 # Notas locales de la base de datos (no commitear)
 MEMORY.md
+
+# Backups de Firestore generados por los loaders (pueden tener datos personales)
+scripts/backups/

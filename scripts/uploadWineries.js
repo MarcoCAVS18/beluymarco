@@ -1,3 +1,12 @@
+// GUARD: este script BORRA toda la coleccion 'wineries' y la recrea con
+// status "Pending" (se pierden status, notes y hidden). Es lo que ya destruyo
+// datos una vez. Para cargar empresas nuevas usa scripts/loadEmpresasNuevas.cjs.
+if (!process.argv.includes('--force-destroy')) {
+  console.error('Este script BORRA y reescribe wineries (resetea status, notes, hidden).');
+  console.error('Para agregar empresas nuevas usa: node scripts/loadEmpresasNuevas.cjs');
+  process.exit(1);
+}
+
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
 import fs from "fs";
