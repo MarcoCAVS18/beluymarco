@@ -22,23 +22,15 @@ firebase deploy --only firestore:rules
 
 Esto desplegará las reglas de seguridad definidas en `firestore.rules`.
 
-### 2. Seed de Datos Iniciales
+### 2. Cargar empresas nuevas
 
-**IMPORTANTE:** Solo ejecutar esto UNA VEZ al iniciar el proyecto.
+Los datos ya estan cargados. Para agregar empresas nuevas se usan SOLO estos scripts, que unicamente crean documentos (nunca pisan), hacen backup previo en `scripts/backups/` y verifican al final:
 
 ```bash
-npm run seed
+node scripts/loadEmpresasNuevas.cjs            # wineries, dry-run
+node scripts/loadHousekeepingNuevas.cjs        # housekeeping, dry-run
+# agregar --execute para aplicar
 ```
-
-Esto cargará a Firestore:
-- ✅ 117 bodegas (wineries)
-- ✅ 150 hoteles (housekeeping)
-- ✅ 4 templates (email y cover letter para winery y housekeeping)
-- ✅ Configuración (flags, status options, resumes, documents)
-
-**Verificar en Firebase Console:**
-- Ve a: https://console.firebase.google.com/project/emails---trabajos/firestore
-- Deberías ver las colecciones: `wineries`, `housekeeping`, `templates`, `config`
 
 ## 📊 Estructura de Firestore
 
@@ -106,13 +98,6 @@ Los templates se pueden editar directamente desde la app. Los cambios se guardan
 - **Desde la app:** Los cambios de status y notas se guardan automáticamente
 - **Desde Firebase Console:** Podés editar manualmente en https://console.firebase.google.com
 
-### Re-seed Completo (⚠️ Cuidado!)
-Si querés volver a cargar todos los datos (esto SOBRESCRIBIRÁ cambios):
-
-```bash
-npm run seed
-```
-
 ## 🔒 Seguridad
 
 El acceso está restringido a una sola cuenta de Google (uso personal). Pasos de setup:
@@ -130,10 +115,6 @@ El acceso está restringido a una sola cuenta de Google (uso personal). Pasos de
 ### Error: "Permission denied"
 - Verificar que las reglas estén deployadas: `firebase deploy --only firestore:rules`
 - Revisar en Firebase Console > Firestore > Rules
-
-### Error: "Collection already exists"
-- Es normal, el seed sobrescribirá los datos existentes
-- Si querés limpiar primero, hacelo manualmente desde Firebase Console
 
 ### Datos no aparecen en la app
 1. Verificar en Firebase Console que los datos estén ahí
