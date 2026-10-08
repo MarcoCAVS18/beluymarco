@@ -128,9 +128,19 @@ export const deleteSubject = async (id) => {
 };
 
 // ==================== CONFIG ====================
-export const getConfig = async () => {
-  const configDoc = await getDoc(doc(db, "config", "app"));
-  return configDoc.exists() ? configDoc.data() : null;
+// config/app se pide una sola vez por sesion: flags, status, resumes, documentos y
+// cover letters salen del mismo documento, asi que se comparte la misma promesa.
+let configPromise = null;
+export const getConfig = () => {
+  if (!configPromise) {
+    configPromise = getDoc(doc(db, "config", "app"))
+      .then(configDoc => (configDoc.exists() ? configDoc.data() : null))
+      .catch(err => {
+        configPromise = null; // si falla, el proximo intento vuelve a leer
+        throw err;
+      });
+  }
+  return configPromise;
 };
 
 export const getCoverLetters = async () => {

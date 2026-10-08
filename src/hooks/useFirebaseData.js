@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { COUNTRIES } from '../data/countries';
 import {
   getCompaniesByCountry,
@@ -27,6 +27,33 @@ import {
 const companyCache = {}; // { [coleccion]: { [pais]: empresas[] } }
 const countsCache = {}; // { [coleccion]: { [pais]: cantidad } }
 const SELECTION_KEY = 'selectedCountries';
+const COUNTS_KEY = 'countryCounts';
+const COUNTS_TTL_MS = 12 * 60 * 60 * 1000; // 12 horas
+
+const readStoredCounts = (collectionName) => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(`${COUNTS_KEY}:${collectionName}`));
+    return saved && Date.now() - saved.at < COUNTS_TTL_MS ? saved.counts : null;
+  } catch {
+    return null;
+  }
+};
+
+const storeCounts = (collectionName, counts) => {
+  try {
+    localStorage.setItem(`${COUNTS_KEY}:${collectionName}`, JSON.stringify({ at: Date.now(), counts }));
+  } catch {
+    // sin localStorage los conteos solo duran la sesion
+  }
+};
+
+const clearStoredCounts = (collectionName) => {
+  try {
+    localStorage.removeItem(`${COUNTS_KEY}:${collectionName}`);
+  } catch {
+    // nada que limpiar
+  }
+};
 
 const readSelection = (collectionName) => {
   try {
@@ -63,12 +90,16 @@ export const useCountryCounts = (collectionName, enabled = true) => {
   const [, setVersion] = useState(0);
   const [failed, setFailed] = useState(false);
 
+  // Si hay conteos guardados en el navegador (y no vencieron) no se consulta nada.
+  const stored = useMemo(() => readStoredCounts(collectionName), [collectionName]);
+
   useEffect(() => {
-    if (!enabled || countsCache[collectionName]) return;
+    if (!enabled || countsCache[collectionName] || stored) return;
     let cancelled = false;
     getCountryCounts(collectionName, [...COUNTRIES.map(c => c.code), 'XX'])
       .then(result => {
         countsCache[collectionName] = result;
+        storeCounts(collectionName, result);
         if (!cancelled) setVersion(v => v + 1);
       })
       .catch(err => {
@@ -76,9 +107,9 @@ export const useCountryCounts = (collectionName, enabled = true) => {
         if (!cancelled) setFailed(true);
       });
     return () => { cancelled = true; };
-  }, [collectionName, enabled]);
+  }, [collectionName, enabled, stored]);
 
-  const counts = countsCache[collectionName];
+  const counts = countsCache[collectionName] || stored;
   return { counts: counts || {}, loading: enabled && !counts && !failed, failed };
 };
 
@@ -148,7 +179,8 @@ const useCompanies = (collectionName, { countries = [], enabled = true } = {}, a
       const cache = (companyCache[collectionName] ||= {});
       // Solo se suma al cache si ese pais ya estaba cargado; si no, se leera completo luego
       if (cache[created.country]) cache[created.country] = [...cache[created.country], created];
-      if (countsCache[collectionName]) delete countsCache[collectionName];
+      delete countsCache[collectionName];
+      clearStoredCounts(collectionName);
       if (countries.includes(created.country)) setItems(prev => [...prev, created]);
       return created;
     } catch (err) {
