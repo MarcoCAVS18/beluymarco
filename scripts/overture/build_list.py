@@ -43,10 +43,52 @@ PERSONALES = {
 }
 EMAIL = re.compile(r'^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$')
 
+# Webs de plataformas de alquiler / portales / clasificados: casi siempre son alquileres
+# particulares sin personal propio, no sirven para buscar trabajo de housekeeping
+WEB_NO_SIRVE = re.compile(
+    r'(^|\.)(airbnb\.[a-z.]+|abnb\.me|booking\.com|vrbo\.com|homeaway\.[a-z.]+|expedia\.[a-z.]+|'
+    r'hotels\.com|tripadvisor\.[a-z.]+|agoda\.com|holidu\.[a-z.]+|fewo-direkt\.de|novasol\.[a-z.]+|'
+    r'interhome\.[a-z.]+|e-domizil\.[a-z.]+|traum-ferienwohnungen\.de|ferienwohnungen\.de|'
+    r'e-chalupy\.cz|nocowanie\.pl|olx\.[a-z.]+|turistinfo\.ro|sommerhus\.dk|dancenter\.[a-z.]+|'
+    r'sologstrand\.[a-z.]+|feriepartner\.[a-z.]+|inatur\.no|finn\.no|blocket\.se|tori\.fi|lomarengas\.fi|'
+    r'nettimokki\.com|stugsommar\.se|bestil-sommerhus\.dk|campsy\.[a-z.]+|pitchup\.com|hometogo\.[a-z.]+)$')
+EMAIL_NO_SIRVE = re.compile(r'@([a-z0-9.-]+\.)?(airbnb\.com|booking\.com|guest\.booking\.com|vrbo\.com|expedia\.com)$')
+# Nombres típicos de alquiler particular (departamento, cabaña, casa de vacaciones, habitaciones)
+NOMBRE_ALQUILER = re.compile(
+    r'\b(apartment|apartments|apartamento|apartamentos|apartamenty|apartament|apartman|apartmani|apartmany|'
+    r'apartmanok|appartement|appartements|appartamento|appartamenti|studio|studios|flat|flats|'
+    r'ferienwohnung|ferienwohnungen|fewo|ferienhaus|ferienhauser|holiday home|holiday house|holiday homes|'
+    r'holiday let|vacation rental|casa vacanze|casa vacanza|sommerhus|feriehus|feriebolig|fritidshus|'
+    r'hytte|hytta|hytter|stuga|stugor|mokki|mokit|chalupa|chalupy|chata|chaty|domek|domki|pokoje|'
+    r'noclegi|kwatery|rooms|room|zimmer|privatzimmer|camere|habitaciones|airbnb)\b')
+# Si el nombre dice que es un establecimiento con personal, se queda aunque matchee lo de arriba
+NOMBRE_ESTABLECIMIENTO = re.compile(
+    r'\b(hotel|hotell|hotelli|hôtel|hotels|aparthotel|resort|hostel|lodge|inn|motel|spa|gasthof|'
+    r'gasthaus|pension|pensjonat|penzion|albergo|turisthotell|fjellstue|gjestgiveri|kro|wardshus|'
+    r'lagenhetshotell|best western|scandic|radisson|thon|clarion|comfort|quality|sokos|holiday club)\b')
+
 
 def norm(s):
     s = unicodedata.normalize('NFD', (s or '').strip().lower())
     return ''.join(c for c in s if unicodedata.category(c) != 'Mn')
+
+
+def dominio(url):
+    m = re.match(r'(?:https?://)?(?:www\.)?([^/:?#]+)', (url or '').strip().lower())
+    return m.group(1) if m else ''
+
+
+def no_sirve(r, email, nombre_norm):
+    # Alquileres particulares / fichas de plataformas: no tienen personal de housekeeping
+    if EMAIL_NO_SIRVE.search(email):
+        return True
+    # Si el nombre dice que es hotel/resort/lodge, se queda aunque su web sea una ficha de plataforma
+    if NOMBRE_ESTABLECIMIENTO.search(nombre_norm):
+        return False
+    webs = [dominio(w) for w in r['websites'] or [] if w]
+    if webs and all(WEB_NO_SIRVE.search(w) for w in webs):
+        return True
+    return bool(NOMBRE_ALQUILER.search(nombre_norm))
 
 
 def nombres_paises():
@@ -65,7 +107,7 @@ def main():
     ya_nombre = {norm(e['nombre']) for e in local}
 
     cont = dict.fromkeys(['total', 'otro_pais', 'cerrado', 'confianza', 'sin_email_o_nombre',
-                          'personal', 'ya_local', 'duplicado'], 0)
+                          'personal', 'no_sirve', 'ya_local', 'duplicado'], 0)
     res, vistos_e, vistos_n = [], set(), set()
     filas = pq.read_table(entrada).to_pylist()
     filas.sort(key=lambda r: -(r['confidence'] or 0))  # ante duplicados queda el de mayor confianza
@@ -91,6 +133,8 @@ def main():
         if email.split('@')[1] in PERSONALES:
             cont['personal'] += 1; continue
         nn = norm(nombre)
+        if no_sirve(r, email, nn):
+            cont['no_sirve'] += 1; continue
         if email in ya_email or nn in ya_nombre:
             cont['ya_local'] += 1; continue
         if email in vistos_e or nn in vistos_n:
