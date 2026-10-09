@@ -28,7 +28,11 @@ const ALLOWED = new Set(['wineries', 'housekeeping', 'kyc']);
 const norm = s => (s || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
 function getHeaders() {
-  const token = execFileSync('gcloud', ['auth', 'print-access-token'], { encoding: 'utf8' }).trim();
+  // En el entorno remoto de Claude, CLOUDSDK_AUTH_ACCESS_TOKEN trae un placeholder del proxy
+  // que pisa a la cuenta activada; se quita para que gcloud use la cuenta de servicio activa.
+  const env = { ...process.env };
+  if (env.CLOUDSDK_AUTH_ACCESS_TOKEN === 'proxy-injected') delete env.CLOUDSDK_AUTH_ACCESS_TOKEN;
+  const token = execFileSync('gcloud', ['auth', 'print-access-token'], { encoding: 'utf8', env }).trim();
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 
@@ -84,7 +88,7 @@ async function createOnly(collection, items, toFields, headers, chunkSize = 400)
     if (!res.ok) throw new Error(`batchWrite ${res.status}: ${await res.text()}`);
     const out = await res.json();
     out.status.forEach((s, j) => {
-      if (s.code) { failed++; console.error(`   ❌ ${chunk[j].id} ${chunk[j].name}: ${s.message}`); }
+      if (s.code) { failed++; console.error(`   ERROR ${chunk[j].id} ${chunk[j].name}: ${s.message}`); }
       else created++;
     });
     console.log(`   lote ${Math.floor(i / chunkSize) + 1}: acum ${created} creadas, ${failed} fallidas`);

@@ -1,11 +1,9 @@
 /**
- * loadHousekeepingNuevas.cjs — carga src/data/empresas-nuevas-housekeeping.json
- * como docs NUEVOS en housekeeping, filtrando SOLO los países pedidos.
+ * loadHousekeepingNuevas.cjs — carga un JSON de empresas (nombre, email, ubicacion,
+ * pais, fuente) como docs NUEVOS en housekeeping, filtrando SOLO los países pedidos.
  *
- * El JSON tiene 12368 entradas de scraping (OSM) de un montón de países; acá
- * solo se cargan Suiza, Suecia, Noruega, Finlandia y Austria (~3700 entradas)
- * para no gastar de más la cuota gratis de Firestore (20k writes/día en Spark
- * y en Blaze; 3700 escrituras no genera cargo).
+ * Por defecto lee src/data/empresas-nuevas-housekeeping-nordicos.json (Overture Maps,
+ * hoteles de SE/NO/FI/DK). Ojo con la cuota gratis de Firestore: 20k writes/día.
  *
  * SOLO crea: cada write lleva currentDocument.exists=false, así que si un id ya
  * existiera la escritura falla en vez de pisar. No toca ningún documento existente
@@ -18,31 +16,34 @@
  * Uso:
  *   node scripts/loadHousekeepingNuevas.cjs            # dry-run
  *   node scripts/loadHousekeepingNuevas.cjs --execute  # aplica
+ *   --file=src/data/otro.json   JSON a cargar (relativo a la raíz del repo)
+ *   --paises=SE,NO,FI,DK        códigos ISO a incluir (default: SE,NO,FI,DK)
  */
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
-
 const lib = require('./lib/safeCreate.cjs');
 
 const DRY_RUN = !process.argv.includes('--execute');
 const COLLECTION = 'housekeeping';
 
-// Solo estos países por ahora (pedido explícito de Marco).
-const COUNTRY = {
-  Switzerland: 'CH',
-  Sweden: 'SE',
-  Norway: 'NO',
-  Finland: 'FI',
-  Austria: 'AT',
-};
+const ROOT = path.join(__dirname, '..');
+const arg = name => process.argv.find(a => a.startsWith(`--${name}=`))?.split('=')[1];
+const FILE = path.join(ROOT, arg('file') || 'src/data/empresas-nuevas-housekeeping-nordicos.json');
+const PAISES = new Set((arg('paises') || 'SE,NO,FI,DK').split(',').map(c => c.trim().toUpperCase()));
+
+// Nombre de país (como viene en el JSON) -> código ISO, sacado de src/data/countries.js.
+const COUNTRY = {};
+const countriesSrc = fs.readFileSync(path.join(ROOT, 'src', 'data', 'countries.js'), 'utf8');
+for (const m of countriesSrc.matchAll(/code: '([A-Z]{2})', name: '([^']+)'/g)) {
+  if (PAISES.has(m[1])) COUNTRY[m[2]] = m[1];
+}
 
 const { norm } = lib;
 
 (async () => {
-  const all = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'src', 'data', 'empresas-nuevas-housekeeping.json'), 'utf8'));
+  const all = JSON.parse(fs.readFileSync(FILE, 'utf8'));
   const subset = all.filter(e => COUNTRY[e.pais]);
-  console.log(`JSON total: ${all.length} · Filtradas a los 5 países pedidos: ${subset.length}`);
+  console.log(`${path.relative(ROOT, FILE)}: ${all.length} · En ${[...PAISES].join(',')}: ${subset.length}`);
 
   const headers = lib.getHeaders();
   const before = await lib.fetchAll(COLLECTION, headers);
@@ -82,7 +83,7 @@ const { norm } = lib;
   console.log('\nMuestra:');
   toCreate.slice(0, 5).forEach(c => console.log(`   ${c.id} ${c.name} <${c.email}> — ${c.location} [${c.country}]`));
 
-  if (DRY_RUN) { console.log('\n🔍 Dry-run: nada escrito. --execute para aplicar.'); return; }
+  if (DRY_RUN) { console.log('\nDry-run: nada escrito. --execute para aplicar.'); return; }
 
   const toFields = c => ({
         id: { integerValue: String(c.id) },
@@ -99,17 +100,17 @@ const { norm } = lib;
   });
 
   const backupFile = lib.writeBackup(COLLECTION, before);
-  console.log(`\n💾 Backup guardado: ${backupFile} (${before.length} docs)`);
+  console.log(`\nBackup guardado: ${backupFile} (${before.length} docs)`);
 
   const { created, failed } = await lib.createOnly(COLLECTION, toCreate, toFields, headers);
 
-  console.log('\n🔎 Verificando que no se pisó nada...');
+  console.log('\nVerificando que no se pisó nada...');
   const after = await lib.fetchAll(COLLECTION, headers);
   const problems = lib.verify(before, after, created);
   if (problems.length) {
-    console.error(`❌ VERIFICACIÓN FALLÓ (${problems.length} problemas). Backup: ${backupFile}`);
+    console.error(`VERIFICACIÓN FALLÓ (${problems.length} problemas). Backup: ${backupFile}`);
     problems.slice(0, 20).forEach(p => console.error('   ' + p));
     process.exit(1);
   }
-  console.log(`✅ Listo: ${created} creadas, ${failed} fallidas, ${skipped.length} salteadas. Los ${before.length} docs previos quedaron intactos.`);
-})().catch(e => { console.error('❌', e); process.exit(1); });
+  console.log(`Listo: ${created} creadas, ${failed} fallidas, ${skipped.length} salteadas. Los ${before.length} docs previos quedaron intactos.`);
+})().catch(e => { console.error('ERROR', e); process.exit(1); });

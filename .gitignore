@@ -52,3 +52,7 @@ MEMORY.md
 
 # Backups de Firestore generados por los loaders (pueden tener datos personales)
 scripts/backups/
+
+# Listas de empresas generadas (Overture): repo público, no commitear
+src/data/empresas-nuevas-housekeeping-*.json
+*.parquet
