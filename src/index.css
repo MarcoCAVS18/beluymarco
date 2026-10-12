@@ -1,25 +1,40 @@
 @import "tailwindcss";
 
+/* Tema claro inspirado en el diseño de referencia: fondo lavanda, tarjetas blancas
+   y un color fuerte por rubro. Los nombres son semánticos (bg, card, ink...) para
+   poder sumar un modo oscuro más adelante cambiando solo estos valores. */
 @theme {
-  --color-dark-bg: #131314;
-  --color-dark-sidebar: #1E1F20;
-  --color-dark-surface: #282A2C;
-  --color-dark-hover: #3C4043;
-  --color-dark-text: #E3E3E3;
-  --color-dark-subtext: #9AA0A6;
-  --color-accent: #8AB4F8;
+  --color-bg: #F1EFF6;
+  --color-card: #FFFFFF;
+  --color-surface: #F5F3F9;
+  --color-line: #E5E1EE;
+  --color-ink: #2A2433;
+  --color-muted: #77707F;
+  --color-primary: #8B2C6F;
+  --color-primary-strong: #74235C;
 
-  --font-family-sans: system-ui, sans-serif;
-  --font-family-mono: "Roboto Mono", monospace;
+  /* Colores por rubro (tarjetas del inicio, chips, mapa) */
+  --color-winery: #8B2C6F;
+  --color-housekeeping: #F29A38;
+  --color-kyc: #4E4BD6;
+  --color-resources: #E5482A;
+
+  --font-sans: "Outfit", system-ui, sans-serif;
+  --font-mono: "Roboto Mono", ui-monospace, monospace;
 
   --animate-bounce: bounce 1s ease-in-out 2;
   --animate-spin: spin 1s linear infinite;
 }
 
 @layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
-    background-color: #131314;
-    color: #E3E3E3;
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
   }
 
   /* iOS Safari hace auto-zoom al enfocar campos con font-size < 16px.
@@ -34,6 +49,18 @@
 }
 
 @layer utilities {
+  /* Espacio para la barra inferior y el notch del teléfono */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   .animate-in {
     animation: fadeIn 0.3s ease-in-out;
   }
@@ -50,34 +77,46 @@
     animation: slideFromLeft 0.2s ease-out;
   }
 
+  .sheet-up {
+    animation: sheetUp 0.25s ease-out;
+  }
+
   @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   @keyframes slideFromTop {
-    from {
-      opacity: 0;
-      transform: translateY(-8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   @keyframes slideFromLeft {
-    from {
-      opacity: 0;
-      transform: translateX(-8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes sheetUp {
+    from { transform: translateY(24px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-in, .fade-in, .slide-in-from-top-2, .slide-in-from-left-2, .sheet-up {
+      animation: none;
     }
   }
+}
+
+/* Popups de Leaflet con el estilo de la app */
+.leaflet-popup-content-wrapper {
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgb(42 36 51 / 0.18);
+}
+.leaflet-popup-content {
+  margin: 12px 14px;
+  font-family: var(--font-sans);
+}
+.leaflet-container {
+  font-family: var(--font-sans);
 }

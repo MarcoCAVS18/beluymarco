@@ -1,290 +1,154 @@
 import { useState } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import Sheet from './ui/Sheet';
 import CountrySelect from './CountrySelect';
+import SectorToggle from './SectorToggle';
+import { useData } from '../hooks/useFirebaseData';
+import { SECTORS, STATUS_META, statusMeta } from '../data/sectors';
 
-const STATUS_OPTIONS = [
-  { label: 'Pending', color: 'bg-gray-600' },
-  { label: 'Sent', color: 'bg-blue-600' },
-  { label: 'Replied', color: 'bg-yellow-600' },
-  { label: 'Interview', color: 'bg-purple-600' },
-  { label: 'Offer', color: 'bg-green-600' },
-  { label: 'Rejected', color: 'bg-red-600' },
-];
+const EMPTY = { name: '', email: '', location: '', country: '', season: '', applyUrl: '', status: 'Pending', notes: '' };
 
-const CreateCompanyModal = ({ isOpen, onClose, sector, onCreate }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    location: '',
-    country: 'NZ',
-    harvestStart: '',
-    season: '',
-    segment: '',
-    applyUrl: '',
-    status: 'Pending',
-    notes: '',
-  });
+const inputClass =
+  'w-full px-4 py-2.5 bg-surface border border-line rounded-xl text-sm outline-none focus:border-primary focus:bg-card transition-colors';
+
+const Field = ({ label, required, children }) => (
+  <label className="block">
+    <span className="block text-xs font-medium text-muted mb-1.5">
+      {label} {required && <span className="text-red-600">*</span>}
+    </span>
+    {children}
+  </label>
+);
+
+const CreateCompanyModal = ({ isOpen, onClose, sector: initialSector, onCreated }) => {
+  const { create, statusOptions } = useData();
+  const [sector, setSector] = useState(initialSector);
+  const [form, setForm] = useState(EMPTY);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  // Al abrir, arranca en el rubro que se está mirando
+  const [lastOpen, setLastOpen] = useState(false);
+  if (isOpen !== lastOpen) {
+    setLastOpen(isOpen);
+    if (isOpen) setSector(initialSector);
+  }
+
+  const meta = SECTORS[sector];
+  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e?.target ? e.target.value : e }));
+
+  const handleClose = () => {
+    setForm(EMPTY);
+    setError(null);
+    onClose();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!formData.name.trim()) {
-      setError('Company name is required');
-      return;
-    }
-    if (!formData.country) {
-      setError('Country is required');
-      return;
-    }
+    if (!form.name.trim()) return setError('Falta el nombre');
+    if (!form.country) return setError('Falta el país');
 
     setLoading(true);
     setError(null);
-
     try {
-      const email = formData.email.trim();
+      const email = form.email.trim();
       const data = {
-        name: formData.name.trim(),
-        email: email,
+        name: form.name.trim(),
+        email,
         emailVerified: email ? false : null,
-        location: formData.location.trim(),
-        country: formData.country,
-        status: formData.status,
-        notes: formData.notes.trim(),
+        location: form.location.trim(),
+        country: form.country,
+        status: form.status,
+        notes: form.notes.trim(),
         hidden: false,
+        [meta.seasonField]: form.season.trim(),
       };
+      if (sector === 'kyc') data.applyUrl = form.applyUrl.trim();
 
-      // Add sector-specific field
-      if (sector === 'winery') {
-        data.harvestStart = formData.harvestStart.trim();
-      } else if (sector === 'kyc') {
-        data.segment = formData.segment.trim();
-        data.applyUrl = formData.applyUrl.trim();
-      } else {
-        data.season = formData.season.trim();
-      }
-
-      await onCreate(data);
-
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        location: '',
-        country: 'NZ',
-        harvestStart: '',
-        season: '',
-        status: 'Pending',
-        notes: '',
-      });
-
-      onClose();
+      const created = await create(sector, data);
+      onCreated?.(sector, created);
+      handleClose();
     } catch (err) {
-      console.error('Error creating company:', err);
-      setError('Failed to create company. Please try again.');
+      console.error('Error creando empresa:', err);
+      setError('No se pudo crear. Probá de nuevo.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClose = () => {
-    setFormData({
-      name: '',
-      email: '',
-      location: '',
-      country: 'NZ',
-      harvestStart: '',
-      season: '',
-      status: 'Pending',
-      notes: '',
-    });
-    setError(null);
-    onClose();
-  };
-
-  if (!isOpen) return null;
+  const statuses = statusOptions.length ? statusOptions.map((s) => s.label) : Object.keys(STATUS_META);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-dark-sidebar w-full max-w-md rounded-2xl border border-dark-hover shadow-2xl max-h-[90vh] overflow-y-auto">
-        <form onSubmit={handleSubmit}>
-          {/* Header */}
-          <div className="flex justify-between items-center p-6 border-b border-dark-hover sticky top-0 bg-dark-sidebar">
-            <h3 className="text-xl font-bold">
-              Create New {sector === 'winery' ? 'Winery' : sector === 'kyc' ? 'KYC Company' : 'Housekeeping'}
-            </h3>
-            <button
-              type="button"
-              onClick={handleClose}
-              className="p-1 hover:bg-dark-surface rounded-full transition-colors"
-            >
-              <X size={20} />
-            </button>
+    <Sheet
+      open={isOpen}
+      onClose={handleClose}
+      title="Nueva empresa"
+      footer={
+        <button
+          type="submit"
+          form="create-company"
+          disabled={loading}
+          className="w-full py-3 rounded-2xl bg-primary text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+        >
+          {loading && <Loader2 size={16} className="animate-spin" />}
+          Crear empresa
+        </button>
+      }
+    >
+      <form id="create-company" onSubmit={handleSubmit} className="space-y-4">
+        <SectorToggle sector={sector} onSectorChange={setSector} />
+
+        {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{error}</div>}
+
+        <Field label={meta.nameLabel} required>
+          <input type="text" value={form.name} onChange={set('name')} className={inputClass} autoFocus />
+        </Field>
+        <Field label="Email">
+          <input type="email" value={form.email} onChange={set('email')} placeholder="contacto@empresa.com" className={inputClass} />
+        </Field>
+        {sector === 'kyc' && (
+          <Field label="Link de aplicación (si no hay email)">
+            <input type="url" value={form.applyUrl} onChange={set('applyUrl')} placeholder="https://..." className={inputClass} />
+          </Field>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field label="Ubicación">
+            <input type="text" value={form.location} onChange={set('location')} placeholder="Ciudad, región" className={inputClass} />
+          </Field>
+          <Field label="País" required>
+            <CountrySelect value={form.country} onChange={set('country')} />
+          </Field>
+        </div>
+        <Field label={meta.seasonLabel}>
+          <input type="text" value={form.season} onChange={set('season')} placeholder={meta.seasonPlaceholder} className={inputClass} />
+        </Field>
+        <div>
+          <span className="block text-xs font-medium text-muted mb-1.5">Estado</span>
+          <div className="flex flex-wrap gap-2">
+            {statuses.map((label) => {
+              const m = statusMeta(label);
+              const active = form.status === label;
+              return (
+                <button
+                  type="button"
+                  key={label}
+                  onClick={() => setForm((f) => ({ ...f, status: label }))}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border ${
+                    active ? `${m.pill} border-transparent ring-2 ring-offset-1 ring-current` : 'border-line text-muted'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${m.dot}`} />
+                  {m.label}
+                </button>
+              );
+            })}
           </div>
-
-          {/* Form Fields */}
-          <div className="p-6 space-y-4">
-            {error && (
-              <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-sm">
-                {error}
-              </div>
-            )}
-
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-medium text-dark-subtext mb-1.5">
-                Name <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                placeholder="Enter company name..."
-                className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors"
-                autoFocus
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-dark-subtext mb-1.5">
-                Email
-              </label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-                placeholder="contact@example.com"
-                className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors"
-              />
-            </div>
-
-            {/* Location */}
-            <div>
-              <label className="block text-sm font-medium text-dark-subtext mb-1.5">
-                Location
-              </label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => handleChange('location', e.target.value)}
-                placeholder="City, Region"
-                className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors"
-              />
-            </div>
-
-            {/* Country */}
-            <div>
-              <label className="block text-sm font-medium text-dark-subtext mb-1.5">
-                Country <span className="text-red-400">*</span>
-              </label>
-              <CountrySelect
-                value={formData.country}
-                onChange={(value) => handleChange('country', value)}
-              />
-            </div>
-
-            {/* Harvest Start / Season / Segment */}
-            <div>
-              <label className="block text-sm font-medium text-dark-subtext mb-1.5">
-                {sector === 'winery' ? 'Harvest Start' : sector === 'kyc' ? 'Segmento' : 'Season'}
-              </label>
-              <input
-                type="text"
-                value={sector === 'winery' ? formData.harvestStart : sector === 'kyc' ? formData.segment : formData.season}
-                onChange={(e) => handleChange(sector === 'winery' ? 'harvestStart' : sector === 'kyc' ? 'segment' : 'season', e.target.value)}
-                placeholder={sector === 'winery' ? 'e.g. "finales de agosto"' : sector === 'kyc' ? 'Cripto / Fintech / RegTech / BPO' : 'e.g. "Winter 2026"'}
-                className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors"
-              />
-            </div>
-
-            {/* Apply URL (solo KYC: si la empresa aplica por formulario/portal en vez de email) */}
-            {sector === 'kyc' && (
-              <div>
-                <label className="block text-sm font-medium text-dark-subtext mb-1.5">
-                  Link de aplicación (si no hay email)
-                </label>
-                <input
-                  type="url"
-                  value={formData.applyUrl}
-                  onChange={(e) => handleChange('applyUrl', e.target.value)}
-                  placeholder="https://careers.empresa.com/kyc-analyst"
-                  className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors"
-                />
-              </div>
-            )}
-
-            {/* Status */}
-            <div>
-              <label className="block text-sm font-medium text-dark-subtext mb-1.5">
-                Status
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {STATUS_OPTIONS.map((status) => (
-                  <button
-                    key={status.label}
-                    type="button"
-                    onClick={() => handleChange('status', status.label)}
-                    className={`p-2 rounded-lg text-xs font-medium border transition-all ${
-                      formData.status === status.label
-                        ? `${status.color} border-transparent text-white`
-                        : 'border-dark-hover bg-dark-surface hover:border-dark-subtext text-dark-text'
-                    }`}
-                  >
-                    {status.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-sm font-medium text-dark-subtext mb-1.5">
-                Notes
-              </label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => handleChange('notes', e.target.value)}
-                placeholder="Additional notes..."
-                rows={3}
-                className="w-full px-4 py-2.5 bg-dark-bg border border-dark-hover rounded-xl text-sm outline-none focus:border-accent transition-colors resize-none"
-              />
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="flex justify-end gap-3 p-6 border-t border-dark-hover">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-4 py-2 bg-dark-surface text-dark-text font-medium rounded-full hover:bg-dark-hover transition-colors"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-accent text-black font-semibold rounded-full hover:bg-accent/90 transition-colors flex items-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                'Create'
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+        <Field label="Notas">
+          <textarea value={form.notes} onChange={set('notes')} rows={3} className={`${inputClass} resize-none`} />
+        </Field>
+      </form>
+    </Sheet>
   );
 };
 

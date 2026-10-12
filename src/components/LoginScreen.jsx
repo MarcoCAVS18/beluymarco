@@ -1,4 +1,4 @@
-import { LogIn, LogOut, ShieldAlert, Briefcase } from 'lucide-react';
+import { LogIn, LogOut, ShieldAlert, Wine, Hotel, Fingerprint } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 // Pantalla que se muestra cuando el usuario no está logueado, o cuando
@@ -10,28 +10,27 @@ const LoginScreen = () => {
     try {
       await signInWithGoogle();
     } catch (error) {
-      console.error('Error signing in:', error);
+      console.error('Error iniciando sesión:', error);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-dark-bg text-dark-text px-4">
-      <div className="flex items-center gap-2 mb-8">
-        <Briefcase className="text-accent w-6 h-6" />
-        <h1 className="text-xl font-medium tracking-tight">Job Application Assistant</h1>
-      </div>
+    <div className="min-h-dvh bg-bg text-ink flex flex-col justify-center px-6 py-10">
+      <div className="max-w-sm w-full mx-auto">
+        <div className="flex gap-2 mb-8">
+          <span className="w-12 h-12 rounded-2xl bg-winery text-white flex items-center justify-center"><Wine size={22} /></span>
+          <span className="w-12 h-12 rounded-2xl bg-housekeeping text-white flex items-center justify-center"><Hotel size={22} /></span>
+          <span className="w-12 h-12 rounded-2xl bg-kyc text-white flex items-center justify-center"><Fingerprint size={22} /></span>
+        </div>
 
-      <div className="bg-dark-sidebar border border-dark-hover rounded-2xl p-8 max-w-sm w-full text-center">
         {user && !isAuthorized ? (
           <>
-            <ShieldAlert className="w-10 h-10 text-red-400 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold mb-2">Acceso no autorizado</h2>
-            <p className="text-dark-subtext text-sm mb-6">
-              La cuenta {user.email} no tiene permiso para entrar a esta aplicación.
-            </p>
+            <ShieldAlert className="w-9 h-9 text-red-600 mb-4" />
+            <h1 className="text-3xl font-bold leading-tight">Acceso no autorizado</h1>
+            <p className="text-muted mt-2 mb-8">La cuenta {user.email} no tiene permiso para entrar a esta aplicación.</p>
             <button
               onClick={signOut}
-              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-dark-surface border border-dark-hover rounded-full text-sm font-medium hover:border-accent transition-all"
+              className="flex items-center justify-center gap-2 w-full py-3.5 bg-card border border-line rounded-2xl text-sm font-medium"
             >
               <LogOut size={16} />
               Cerrar sesión
@@ -39,16 +38,17 @@ const LoginScreen = () => {
           </>
         ) : (
           <>
-            <LogIn className="w-10 h-10 text-accent mx-auto mb-4" />
-            <h2 className="text-lg font-semibold mb-2">Iniciar sesión</h2>
-            <p className="text-dark-subtext text-sm mb-6">
-              Acceso restringido. Iniciá sesión con Google para continuar.
-            </p>
+            <h1 className="text-3xl font-bold leading-tight">
+              ¡Hola!
+              <br />
+              Marco y Belu
+            </h1>
+            <p className="text-muted mt-2 mb-8">Acceso restringido. Iniciá sesión con Google para seguir con la búsqueda de trabajo.</p>
             <button
               onClick={handleSignIn}
-              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-accent text-black font-semibold rounded-full hover:bg-accent/90 transition-all"
+              className="flex items-center justify-center gap-2 w-full py-3.5 bg-primary text-white font-semibold rounded-2xl hover:bg-primary-strong shadow-lg shadow-primary/25"
             >
-              <LogIn size={16} />
+              <LogIn size={18} />
               Iniciar sesión con Google
             </button>
           </>
