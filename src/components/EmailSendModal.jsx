@@ -1,97 +1,52 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Loader2, Send, Check, AlertCircle, Paperclip } from 'lucide-react';
 import Sheet from './ui/Sheet';
-import { getEmailTemplate, getSubjects, getResumes } from '../firebase/services';
-import { personalizeGreeting, getDefaultSubject } from '../utils/emailUtils';
-import { sendEmail } from '../services/gmailService';
-import { fetchDocumentAsBase64 } from '../services/documentService';
+import { personalizeGreeting } from '../utils/emailUtils';
+import { composeEmail } from '../services/quickSend';
+import { sendAs } from '../services/mailer';
+import { useAuth } from '../hooks/useAuth';
+import { useResources } from '../hooks/useResources';
 
 // Modal de preview/envío de email para una empresa puntual.
-// Autocompleta asunto y cuerpo según el rubro (sector) de la empresa,
-// pero ambos quedan editables antes de confirmar el envío.
+// Autocompleta asunto y cuerpo con los recursos de la cuenta (admin: los de siempre;
+// invitado: los suyos), pero ambos quedan editables antes de confirmar el envío.
 // `onSent` se dispara solo si el envío fue exitoso (ej: marcar status "Sent").
 const EmailSendModal = ({ isOpen, company, sector, onClose, onSent }) => {
+  const { isAdmin, getGmailToken } = useAuth();
+  const resources = useResources();
   const [subject, setSubject] = useState('');
-  const [subjectOptions, setSubjectOptions] = useState([]);
   const [body, setBody] = useState('');
-  const [loadingTemplate, setLoadingTemplate] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState(null);
   const [sent, setSent] = useState(false);
-  const [sectorResumes, setSectorResumes] = useState([]);
   const [attachResumes, setAttachResumes] = useState(true);
 
-  useEffect(() => {
-    if (!isOpen || !company) return;
+  const subjectOptions = resources.subjects.filter((s) => s.sector === sector);
+  const sectorResumes = resources.resumesFor(sector);
+  const loadingTemplate = resources.loading;
 
-    let cancelled = false;
-    setSendError(null);
-    setSent(false);
-    setSubject(getDefaultSubject(sector, company.name));
-    setSubjectOptions([]);
-    setBody('');
-    setLoadingTemplate(true);
-    setAttachResumes(true);
-    setSectorResumes([]);
-
-    // CVs del rubro (config/app): solo housekeeping y winery tienen resumes.
-    getResumes()
-      .then((all) => {
-        if (cancelled) return;
-        setSectorResumes(all.filter((r) => r.type?.toLowerCase() === sector));
-      })
-      .catch((error) => {
-        console.error('Error loading resumes:', error);
-      });
-
-    getEmailTemplate(sector)
-      .then((content) => {
-        if (cancelled) return;
-        setBody(personalizeGreeting(content, company.name));
-      })
-      .catch((error) => {
-        console.error('Error loading email template:', error);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingTemplate(false);
-      });
-
-    // Subjects guardados del rubro: el primero queda preseleccionado. Si no
-    // hay ninguno, queda el default hardcodeado (editable a mano igual).
-    getSubjects()
-      .then((all) => {
-        if (cancelled) return;
-        const options = all.filter((s) => s.sector === sector);
-        setSubjectOptions(options);
-        if (options.length > 0) {
-          setSubject(personalizeGreeting(options[0].text, company.name));
-        }
-      })
-      .catch((error) => {
-        console.error('Error loading subjects:', error);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, company, sector]);
+  // Al abrir con otra empresa (o cuando terminan de cargar los recursos) se arma el email
+  const openKey = isOpen && company ? `${sector}:${company.id}:${resources.loading}` : null;
+  const [prevKey, setPrevKey] = useState(null);
+  if (openKey !== prevKey) {
+    setPrevKey(openKey);
+    if (openKey) {
+      const mail = composeEmail(company, sector, resources, { isAdmin });
+      setSubject(mail.subject);
+      setBody(mail.body);
+      setSendError(null);
+      setSent(false);
+      setAttachResumes(true);
+    }
+  }
 
   const handleSend = async () => {
     if (!company?.email) return;
     setSending(true);
     setSendError(null);
     try {
-      let attachments;
-      if (attachResumes && sectorResumes.length > 0) {
-        attachments = await Promise.all(
-          sectorResumes.map(async (resume) => ({
-            filename: resume.file,
-            contentType: 'application/pdf',
-            data: await fetchDocumentAsBase64(resume.path),
-          }))
-        );
-      }
-      await sendEmail({ to: company.email, subject, body, attachments });
+      const attachments = attachResumes && sectorResumes.length ? await resources.attachmentsFor(sector) : undefined;
+      await sendAs({ isAdmin, getGmailToken }, { to: company.email, subject, body, attachments });
       setSent(true);
       onSent?.(company);
       setTimeout(() => {
@@ -241,7 +196,7 @@ const EmailSendModal = ({ isOpen, company, sector, onClose, onSent }) => {
                 {sectorResumes.map((resume) => (
                   <li key={resume.id} className="text-xs text-muted flex items-center gap-1.5">
                     <Check size={12} className="text-primary flex-shrink-0" />
-                    {resume.file}
+                    {resume.name}
                   </li>
                 ))}
               </ul>

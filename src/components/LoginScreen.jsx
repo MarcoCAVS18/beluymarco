@@ -4,7 +4,8 @@ import { useAuth } from '../hooks/useAuth';
 // Pantalla que se muestra cuando el usuario no está logueado, o cuando
 // está logueado pero con un email distinto al autorizado.
 const LoginScreen = () => {
-  const { user, isAuthorized, signInWithGoogle, signOut } = useAuth();
+  const { user, member, isAuthorized, signInWithGoogle, signOut } = useAuth();
+  const revoked = member?.status === 'revoked';
 
   const handleSignIn = async () => {
     try {
@@ -26,14 +27,18 @@ const LoginScreen = () => {
         {user && !isAuthorized ? (
           <>
             <ShieldAlert className="w-9 h-9 text-red-600 mb-4" />
-            <h1 className="text-3xl font-bold leading-tight">Acceso no autorizado</h1>
-            <p className="text-muted mt-2 mb-8">La cuenta {user.email} no tiene permiso para entrar a esta aplicación.</p>
+            <h1 className="text-3xl font-bold leading-tight">{revoked ? 'Tu acceso fue pausado' : 'No tenés invitación'}</h1>
+            <p className="text-muted mt-2 mb-8">
+              {revoked
+                ? `La cuenta ${user.email} ya no tiene acceso a la app. Si creés que es un error, hablá con quien te invitó.`
+                : `La cuenta ${user.email} no está invitada. Pedile a quien te pasó la app que te invite con este email, o entrá con otra cuenta de Google.`}
+            </p>
             <button
               onClick={signOut}
               className="flex items-center justify-center gap-2 w-full py-3.5 bg-card border border-line rounded-2xl text-sm font-medium"
             >
               <LogOut size={16} />
-              Cerrar sesión
+              Entrar con otra cuenta
             </button>
           </>
         ) : (
@@ -41,15 +46,15 @@ const LoginScreen = () => {
             <h1 className="text-3xl font-bold leading-tight">
               ¡Hola!
               <br />
-              Marco y Belu
+              Organicemos tu búsqueda de trabajo
             </h1>
-            <p className="text-muted mt-2 mb-8">Acceso restringido. Iniciá sesión con Google para seguir con la búsqueda de trabajo.</p>
+            <p className="text-muted mt-2 mb-8">Solo con invitación. Entrá con la cuenta de Google que te invitaron.</p>
             <button
               onClick={handleSignIn}
               className="flex items-center justify-center gap-2 w-full py-3.5 bg-primary text-white font-semibold rounded-2xl hover:bg-primary-strong shadow-lg shadow-primary/25"
             >
               <LogIn size={18} />
-              Iniciar sesión con Google
+              Entrar con Google
             </button>
           </>
         )}

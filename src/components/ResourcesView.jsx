@@ -1,8 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Copy, Check, FileDown, Edit3, Save, X, File, Loader2, FileText, Plus, Trash2 } from 'lucide-react';
-import { useTemplates, useConfig, useSubjects } from '../hooks/useFirebaseData';
+import { useState } from 'react';
+import { Copy, Check, FileDown, Edit3, Save, X, File, Loader2, FileText, Plus, Trash2, UserRound, Mail } from 'lucide-react';
+import { useResources } from '../hooks/useResources';
+import { useData } from '../hooks/useFirebaseData';
+import { useAuth } from '../hooks/useAuth';
 import { downloadDocument } from '../services/documentService';
 import SectorToggle from './SectorToggle';
+import DocumentsManager from './DocumentsManager';
+import ProfileForm from './ProfileForm';
+import Sheet from './ui/Sheet';
 
 const handleDownload = (docPath, filename) => {
   downloadDocument(docPath, filename).catch((error) => {
@@ -10,15 +15,18 @@ const handleDownload = (docPath, filename) => {
   });
 };
 
-const CopyBlock = ({ title, text, onTextChange, downloadPath }) => {
+const CopyBlock = ({ title, hint, text, onTextChange, downloadPath, placeholder }) => {
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState(text);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  // Si el texto guardado cambia (otro rubro, recarga), se muestra el nuevo
+  const [prevText, setPrevText] = useState(text);
+  if (text !== prevText) {
+    setPrevText(text);
     setEditedText(text);
-  }, [text]);
+  }
 
   const handleCopy = () => {
     navigator.clipboard.writeText(editedText);
@@ -27,103 +35,85 @@ const CopyBlock = ({ title, text, onTextChange, downloadPath }) => {
   };
 
   const handleSave = async () => {
-    if (onTextChange) {
-      try {
-        setSaving(true);
-        await onTextChange(editedText);
-        setIsEditing(false);
-      } catch (error) {
-        console.error('Error guardando template:', error);
-      } finally {
-        setSaving(false);
-      }
+    try {
+      setSaving(true);
+      await onTextChange(editedText);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error guardando template:', error);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleCancel = () => {
-    setEditedText(text);
-    setIsEditing(false);
-  };
+  const empty = !editedText.trim();
 
   return (
-    <div className="bg-card rounded-3xl p-4 sm:p-5 mb-6 shadow-sm">
+    <div className="bg-card rounded-3xl p-4 sm:p-5 shadow-sm">
       <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
         <h4 className="font-medium text-primary">{title}</h4>
         <div className="flex gap-2">
           {isEditing ? (
             <>
-              <button
-                onClick={handleCancel}
-                className="flex items-center gap-1.5 text-xs font-medium bg-surface hover:bg-line px-3 py-1.5 rounded-full transition-all duration-200 hover:scale-105"
-              >
-                <X size={14} />
-                Cancelar
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-1.5 text-xs font-medium bg-primary text-white hover:bg-primary-strong px-3 py-1.5 rounded-full transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <SmallButton onClick={() => { setEditedText(text); setIsEditing(false); }}>
+                <X size={14} /> Cancelar
+              </SmallButton>
+              <SmallButton onClick={handleSave} primary disabled={saving}>
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                 {saving ? 'Guardando...' : 'Guardar'}
-              </button>
+              </SmallButton>
             </>
           ) : (
             <>
-              {/* Botón PDF solo si existe la ruta */}
               {downloadPath && (
-                <button
-                  onClick={() => handleDownload(downloadPath, downloadPath.split('/').pop())}
-                  className="flex items-center gap-1.5 text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 px-3 py-1.5 rounded-full transition-all duration-200 hover:scale-105 border border-primary/20"
-                  title="Descargar PDF"
-                >
-                  <FileText size={14} />
-                  PDF
-                </button>
+                <SmallButton onClick={() => handleDownload(downloadPath, downloadPath.split('/').pop())}>
+                  <FileText size={14} /> PDF
+                </SmallButton>
               )}
-
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-1.5 text-xs font-medium bg-surface hover:bg-line px-3 py-1.5 rounded-full transition-all duration-200 hover:scale-105"
-              >
-                <Edit3 size={14} />
-                Editar
-              </button>
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-1.5 text-xs font-medium bg-surface hover:bg-line px-3 py-1.5 rounded-full transition-all duration-200 hover:scale-105"
-              >
-                {copied ? (
-                  <>
-                    <Check size={14} className="text-green-600 animate-bounce" />
-                    Copiado
-                  </>
-                ) : (
-                  <>
-                    <Copy size={14} />
-                    Copiar
-                  </>
-                )}
-              </button>
+              <SmallButton onClick={() => setIsEditing(true)}>
+                <Edit3 size={14} /> {empty ? 'Escribir' : 'Editar'}
+              </SmallButton>
+              {!empty && (
+                <SmallButton onClick={handleCopy}>
+                  {copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+                  {copied ? 'Copiado' : 'Copiar'}
+                </SmallButton>
+              )}
             </>
           )}
         </div>
       </div>
+      {hint && <p className="text-xs text-muted mb-2">{hint}</p>}
       {isEditing ? (
         <textarea
           value={editedText}
           onChange={(e) => setEditedText(e.target.value)}
-          className="w-full text-sm text-ink font-mono bg-surface p-4 rounded-2xl border border-primary focus:border-primary outline-none min-h-[200px] resize-y"
+          placeholder={placeholder}
+          className="w-full text-sm text-ink font-mono bg-surface p-4 rounded-2xl border border-primary outline-none min-h-[220px] resize-y"
           autoFocus
         />
+      ) : empty ? (
+        <button onClick={() => setIsEditing(true)} className="w-full text-sm text-muted bg-surface p-6 rounded-2xl border-2 border-dashed border-line">
+          Todavía no hay nada acá. Tocá para escribirlo.
+        </button>
       ) : (
-        <pre className="whitespace-pre-wrap text-sm text-muted font-mono bg-surface p-4 rounded-2xl overflow-x-auto">
-          {editedText}
-        </pre>
+        <pre className="whitespace-pre-wrap text-sm text-muted font-mono bg-surface p-4 rounded-2xl overflow-x-auto">{editedText}</pre>
       )}
     </div>
   );
 };
+
+const SmallButton = ({ onClick, primary, disabled, children }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-colors disabled:opacity-50 ${
+      primary ? 'bg-primary text-white hover:bg-primary-strong' : 'bg-surface hover:bg-line'
+    }`}
+  >
+    {children}
+  </button>
+);
 
 // Fila de un asunto: editable inline, con guardado solo si cambió y borrado.
 const SubjectRow = ({ subject, onSave, onDelete }) => {
@@ -158,37 +148,27 @@ const SubjectRow = ({ subject, onSave, onDelete }) => {
       <input
         type="text"
         value={text}
+        maxLength={300}
         onChange={(e) => setText(e.target.value)}
-        className="flex-1 min-w-0 px-4 py-2.5 bg-surface border border-line rounded-xl text-sm outline-none focus:border-primary transition-colors"
+        className="flex-1 min-w-0 px-4 py-2.5 bg-surface border border-line rounded-xl text-sm outline-none focus:border-primary"
       />
       {dirty && (
-        <button
-          onClick={handleSave}
-          disabled={busy || !text.trim()}
-          className="p-2.5 bg-primary text-white rounded-xl hover:bg-primary-strong transition-colors disabled:opacity-50 shrink-0"
-          title="Guardar cambios"
-        >
+        <button onClick={handleSave} disabled={busy || !text.trim()} className="p-2.5 bg-primary text-white rounded-xl disabled:opacity-50 shrink-0" title="Guardar cambios">
           {busy ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
         </button>
       )}
-      <button
-        onClick={handleDelete}
-        disabled={busy}
-        className="p-2.5 bg-surface text-muted rounded-xl hover:bg-red-50 hover:text-red-700 transition-colors disabled:opacity-50 shrink-0"
-        title="Borrar asunto"
-      >
+      <button onClick={handleDelete} disabled={busy} className="p-2.5 bg-surface text-muted rounded-xl hover:bg-red-50 hover:text-red-700 disabled:opacity-50 shrink-0" title="Borrar asunto">
         <Trash2 size={16} />
       </button>
     </div>
   );
 };
 
-// Lista de asuntos del rubro actual + campo para agregar nuevos.
+// Asuntos del rubro actual + campo para agregar nuevos
 const SubjectsSection = ({ sector }) => {
-  const { subjects, loading, addSubject, editSubject, removeSubject } = useSubjects();
+  const { subjects, loading, addSubject, editSubject, removeSubject } = useResources();
   const [newText, setNewText] = useState('');
   const [adding, setAdding] = useState(false);
-
   const sectorSubjects = subjects.filter((s) => s.sector === sector);
 
   const handleAdd = async () => {
@@ -207,39 +187,29 @@ const SubjectsSection = ({ sector }) => {
   return (
     <div>
       <h3 className="text-xl font-semibold mb-1">Asuntos de email</h3>
-      <p className="text-sm text-muted mb-4">
-        Al enviar un email vas a poder elegir cuál de estos asuntos usar.
-      </p>
+      <p className="text-sm text-muted mb-4">El primero se usa en el envío rápido; en el modal de envío podés elegir otro.</p>
       <div className="bg-card rounded-3xl p-4 sm:p-5 space-y-3 shadow-sm">
         {loading ? (
           <div className="flex items-center gap-2 text-muted text-sm py-2">
-            <Loader2 size={16} className="animate-spin" />
-            Cargando asuntos...
+            <Loader2 size={16} className="animate-spin" /> Cargando asuntos...
           </div>
         ) : (
           <>
             {sectorSubjects.map((subject) => (
               <SubjectRow key={subject.id} subject={subject} onSave={editSubject} onDelete={removeSubject} />
             ))}
-            {sectorSubjects.length === 0 && (
-              <p className="text-sm text-muted py-1">
-                Todavía no hay asuntos para este rubro. Agregá el primero:
-              </p>
-            )}
+            {sectorSubjects.length === 0 && <p className="text-sm text-muted py-1">Todavía no hay asuntos para este rubro. Agregá el primero:</p>}
             <div className="flex items-center gap-2 pt-1">
               <input
                 type="text"
                 value={newText}
+                maxLength={300}
                 onChange={(e) => setNewText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
                 placeholder="Nuevo asunto..."
-                className="flex-1 min-w-0 px-4 py-2.5 bg-surface border border-line rounded-xl text-sm outline-none focus:border-primary transition-colors placeholder:text-muted/60"
+                className="flex-1 min-w-0 px-4 py-2.5 bg-surface border border-line rounded-xl text-sm outline-none focus:border-primary placeholder:text-muted/60"
               />
-              <button
-                onClick={handleAdd}
-                disabled={adding || !newText.trim()}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary-strong transition-colors disabled:opacity-50 shrink-0"
-              >
+              <button onClick={handleAdd} disabled={adding || !newText.trim()} className="flex items-center gap-1.5 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-xl disabled:opacity-50 shrink-0">
                 {adding ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                 Agregar
               </button>
@@ -251,23 +221,13 @@ const SubjectsSection = ({ sector }) => {
   );
 };
 
+const TEMPLATE_HINT = 'Podés usar {company} (nombre de la empresa), {nombre}, {firma} y {telefono}: se completan solos al enviar.';
+
 const ResourcesView = ({ sector, setSector }) => {
-  // Obtenemos coverLetters desde useConfig
-  const { templates, loading: templatesLoading, updateTemplate } = useTemplates();
-  const { resumes = [], otherDocuments = [], coverLetters = {}, loading: configLoading } = useConfig();
-
-  const loading = templatesLoading || configLoading;
-
-  // Seleccionamos la ruta según el sector
-  const currentCoverLetterPath = coverLetters[sector] || '';
-
-  const handleEmailChange = async (newText) => {
-    await updateTemplate(sector, 'email', newText);
-  };
-
-  const handleCoverLetterChange = async (newText) => {
-    await updateTemplate(sector, 'coverLetter', newText);
-  };
+  const { isAdmin } = useAuth();
+  const { sectors } = useData();
+  const { loading, templates, saveTemplate, files, adminDocs, profile } = useResources();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   if (loading) {
     return (
@@ -277,6 +237,8 @@ const ResourcesView = ({ sector, setSector }) => {
     );
   }
 
+  const adminResumes = files.filter((f) => f.sector === sector);
+
   return (
     <div className="space-y-8 fade-in">
       <div>
@@ -284,73 +246,94 @@ const ResourcesView = ({ sector, setSector }) => {
         <SectorToggle sector={sector} onSectorChange={setSector} />
       </div>
 
-      {/* CVs del rubro */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {resumes.filter(r => r.type.toLowerCase() === sector).map((resume) => (
-          <div key={resume.id} className="bg-card p-4 rounded-2xl flex justify-between items-center group shadow-sm">
-            <div>
-              <p className="font-semibold">CV de {resume.person}</p>
-              <p className="text-xs text-muted uppercase">{resume.type}</p>
-            </div>
-            <button
-              onClick={() => handleDownload(resume.path, resume.file)}
-              className="w-11 h-11 flex items-center justify-center bg-primary/10 rounded-xl text-primary transition-colors hover:bg-primary hover:text-white"
-              title="Descargar CV"
-            >
-              <FileDown size={20} />
-            </button>
+      {/* Perfil del invitado (el admin no tiene perfil editable) */}
+      {!isAdmin && (
+        <button onClick={() => setProfileOpen(true)} className="w-full bg-card rounded-3xl p-4 shadow-sm flex items-center gap-3 text-left">
+          <span className="w-11 h-11 rounded-2xl bg-housekeeping/15 text-housekeeping flex items-center justify-center">
+            <UserRound size={20} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-semibold truncate">{profile?.displayName || 'Tu perfil'}</span>
+            <span className="block text-xs text-muted truncate">{profile?.signature ? profile.signature.split('\n')[0] : 'Nombre, firma y teléfono de tus emails'}</span>
+          </span>
+          <Edit3 size={16} className="text-muted" />
+        </button>
+      )}
+
+      {/* Documentos */}
+      <div>
+        <h3 className="text-xl font-semibold mb-1">Documentos</h3>
+        <p className="text-sm text-muted mb-4">{isAdmin ? 'CVs de este rubro.' : 'Tus CVs y documentos. Los CVs del rubro se adjuntan solos al enviar.'}</p>
+        {isAdmin ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {adminResumes.map((resume) => (
+              <div key={resume.id} className="bg-card p-4 rounded-2xl flex justify-between items-center shadow-sm">
+                <div>
+                  <p className="font-semibold">CV de {resume.person}</p>
+                  <p className="text-xs text-muted">{resume.name}</p>
+                </div>
+                <button onClick={() => handleDownload(resume.path, resume.name)} className="w-11 h-11 flex items-center justify-center bg-primary/10 rounded-xl text-primary hover:bg-primary hover:text-white" title="Descargar CV">
+                  <FileDown size={20} />
+                </button>
+              </div>
+            ))}
+            {adminResumes.length === 0 && <p className="text-sm text-muted">No hay CVs para este rubro.</p>}
           </div>
-        ))}
+        ) : (
+          <DocumentsManager sectors={sectors} />
+        )}
       </div>
 
-      {/* Asuntos */}
       <SubjectsSection sector={sector} />
 
-      {/* Templates */}
       <div>
-        <h3 className="text-xl font-semibold mb-4">Cuerpo del email</h3>
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Mail size={20} className="text-primary" /> Cuerpo del email
+        </h3>
         <CopyBlock
-          title="Template corto y directo"
+          title={isAdmin ? 'Template corto y directo' : 'Tu email para este rubro'}
+          hint={isAdmin ? null : TEMPLATE_HINT}
+          placeholder={'Hi {company} Team,\n\nMy name is {nombre}...\n\n{firma}'}
           text={templates[sector]?.email || ''}
-          onTextChange={handleEmailChange}
+          onTextChange={(t) => saveTemplate(sector, 'email', t)}
         />
       </div>
 
       <div>
-        <h3 className="text-xl font-semibold mb-4">Cover letter (en pareja)</h3>
+        <h3 className="text-xl font-semibold mb-4">Cover letter</h3>
         <CopyBlock
           title="Contenido de la cover letter"
           text={templates[sector]?.coverLetter || ''}
-          onTextChange={handleCoverLetterChange}
-          downloadPath={currentCoverLetterPath}
+          onTextChange={(t) => saveTemplate(sector, 'coverLetter', t)}
+          downloadPath={isAdmin ? adminDocs.coverLetters[sector] : null}
         />
       </div>
 
-      {/* Otros documentos */}
-      <div>
-        <h3 className="text-xl font-semibold mb-4">Otros documentos</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {otherDocuments.map((doc) => (
-            <div key={doc.id} className="bg-card p-4 rounded-2xl flex justify-between items-center gap-3 group shadow-sm">
-              <div>
-                <p className="font-semibold flex items-center gap-2">
-                  <File size={18} className="text-primary" />
-                  {doc.name}
-                </p>
-                <p className="text-xs text-muted mt-1">{doc.description}</p>
+      {isAdmin && adminDocs.otherDocuments.length > 0 && (
+        <div>
+          <h3 className="text-xl font-semibold mb-4">Otros documentos</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {adminDocs.otherDocuments.map((doc) => (
+              <div key={doc.id} className="bg-card p-4 rounded-2xl flex justify-between items-center gap-3 shadow-sm">
+                <div>
+                  <p className="font-semibold flex items-center gap-2">
+                    <File size={18} className="text-primary" />
+                    {doc.name}
+                  </p>
+                  <p className="text-xs text-muted mt-1">{doc.description}</p>
+                </div>
+                <button onClick={() => handleDownload(doc.path, doc.file)} className="shrink-0 w-11 h-11 flex items-center justify-center bg-primary/10 rounded-xl text-primary hover:bg-primary hover:text-white" title={`Descargar ${doc.name}`}>
+                  <FileDown size={20} />
+                </button>
               </div>
-              <button
-                onClick={() => handleDownload(doc.path, doc.file)}
-                className="shrink-0 w-11 h-11 flex items-center justify-center bg-primary/10 rounded-xl text-primary transition-colors hover:bg-primary hover:text-white"
-                title={`Descargar ${doc.name}`}
-              >
-                <FileDown size={20} />
-              </button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
+      <Sheet open={profileOpen} onClose={() => setProfileOpen(false)} title="Tu perfil" subtitle="Se usa en el saludo de la app y en tus emails.">
+        <ProfileForm onSaved={() => setProfileOpen(false)} />
+      </Sheet>
     </div>
   );
 };

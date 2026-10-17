@@ -43,7 +43,10 @@ const SwipeToSend = ({ enabled, isOpen, onOpenChange, state, onPress, color, res
     const g = gesture.current;
     gesture.current = null;
     if (!g || g.dir !== 'h') return;
-    suppressClick.current = true; // el "click" que sigue al arrastre no abre la ficha
+    // El "click" que algunos navegadores disparan al soltar no tiene que abrir la ficha.
+    // Se limpia solo, por si el navegador no lo dispara.
+    suppressClick.current = true;
+    setTimeout(() => (suppressClick.current = false), 400);
     const open = (drag ?? base) < -ACTION_W / 2;
     setDrag(null);
     onOpenChange(open);

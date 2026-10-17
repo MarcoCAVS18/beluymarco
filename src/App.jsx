@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useState } from 'react';
+import { lazy, Suspense, useCallback, useRef, useState } from 'react';
 import { Loader2, RefreshCw } from 'lucide-react';
 import Navigation from './components/Navigation';
 import HomeView from './components/HomeView';
@@ -8,15 +8,20 @@ import LoginScreen from './components/LoginScreen';
 import CompanyDetailSheet from './components/CompanyDetailSheet';
 import CreateCompanyModal from './components/CreateCompanyModal';
 import EmailSendModal from './components/EmailSendModal';
+import Onboarding from './components/Onboarding';
 import { DataProvider } from './contexts/DataContext';
+import { ResourcesProvider } from './contexts/ResourcesContext';
 import { useAuth } from './hooks/useAuth';
 import { useData } from './hooks/useFirebaseData';
+import { useResources } from './hooks/useResources';
 import { SECTOR_IDS } from './data/sectors';
 
 // El mapa (Leaflet + tabla de ciudades) se baja recién cuando se abre esa pestaña
 const MapView = lazy(() => import('./components/MapView'));
+// El panel de admin solo lo baja la cuenta admin
+const AdminView = lazy(() => import('./components/AdminView'));
 
-const TABS = ['home', 'companies', 'map', 'resources'];
+const TABS = ['home', 'companies', 'map', 'resources', 'admin'];
 const EMPTY_FILTERS = { search: '', country: null, status: null, showHidden: false, mode: 'list' };
 
 // Recuerda la última pestaña y rubro en el navegador (comodidad, no es crítico)
@@ -37,20 +42,25 @@ const remember = (key, value) => {
 };
 
 function Shell() {
-  const { user, signOut } = useAuth();
-  const { findCompany, selected, setSelected, loading, error, reload, update } = useData();
+  const { user, isAdmin, signOut } = useAuth();
+  const { findCompany, selected, setSelected, sectors, loading, error, reload, update } = useData();
 
   const [tab, setTabState] = useState(() => remembered('tab', TABS, 'home'));
-  const [sector, setSectorState] = useState(() => remembered('sector', SECTOR_IDS, 'housekeeping'));
+  const [sectorState, setSectorState] = useState(() => remembered('sector', SECTOR_IDS, 'housekeeping'));
+  // Siempre un rubro que esta cuenta puede ver
+  const sector = sectors.includes(sectorState) ? sectorState : sectors[0];
+  const currentTab = tab === 'admin' && !isAdmin ? 'home' : tab;
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [open, setOpen] = useState(null); // { sector, id } de la empresa abierta
   const [emailTarget, setEmailTarget] = useState(null); // { sector, company }
   const [creating, setCreating] = useState(false);
 
+  // La que scrollea es la zona principal (no la ventana): al cambiar de pestaña vuelve arriba
+  const mainRef = useRef(null);
   const setTab = useCallback((t) => {
     setTabState(t);
     remember('tab', t);
-    window.scrollTo({ top: 0 });
+    mainRef.current?.scrollTo({ top: 0 });
   }, []);
 
   const setSector = useCallback((s) => {
@@ -79,15 +89,25 @@ function Shell() {
 
   const openCompany = useCallback((s, id) => setOpen({ sector: s, id }), []);
 
+
   // La ficha abierta se busca en los datos vivos, así refleja cada cambio al instante
   const openCompanyData = open ? findCompany(open.sector, open.id) : null;
 
+  if (!sector) {
+    return (
+      <div className="min-h-dvh bg-bg flex flex-col items-center justify-center gap-4 p-6 text-center">
+        <p className="font-semibold">Tu invitación no tiene rubros habilitados todavía.</p>
+        <button onClick={signOut} className="px-4 py-2.5 rounded-xl bg-card border border-line text-sm font-medium">Salir</button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-dvh bg-bg text-ink">
-      <Navigation tab={tab} setTab={setTab} onAdd={() => setCreating(true)} onSignOut={signOut} userEmail={user?.email} />
+      <Navigation tab={currentTab} setTab={setTab} isAdmin={isAdmin} onAdd={isAdmin ? () => setCreating(true) : null} onSignOut={signOut} userEmail={user?.email} />
 
-      <main className="flex-1 min-w-0 h-full overflow-y-auto">
-        <div className={`mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 pt-[max(1rem,env(safe-area-inset-top))] lg:pt-8 ${tab === 'map' ? 'pb-0 lg:pb-8' : 'pb-28 lg:pb-10'}`}>
+      <main ref={mainRef} className="flex-1 min-w-0 h-full overflow-y-auto">
+        <div className={`mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 pt-[max(1rem,env(safe-area-inset-top))] lg:pt-8 ${currentTab === 'map' ? 'pb-0 lg:pb-8' : 'pb-28 lg:pb-10'}`}>
           {loading ? (
             <div className="flex items-center justify-center h-[60vh]">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -104,18 +124,23 @@ function Shell() {
             </div>
           ) : (
             <>
-              {tab === 'home' && (
-                <HomeView goToCompanies={goToCompanies} goToResources={() => setTab('resources')} onOpenCompany={openCompany} />
+              {currentTab === 'home' && (
+                <HomeView goToCompanies={goToCompanies} goToResources={() => setTab('resources')} goToAdmin={() => setTab('admin')} onOpenCompany={openCompany} />
               )}
-              {tab === 'companies' && (
+              {currentTab === 'companies' && (
                 <CompaniesView sector={sector} setSector={setSector} filters={filters} setFilters={setFilters} onOpenCompany={openCompany} />
               )}
-              {tab === 'map' && (
+              {currentTab === 'map' && (
                 <Suspense fallback={<div className="flex items-center justify-center h-[60vh]"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
                   <MapView sector={sector} setSector={setSector} onOpenCompany={openCompany} />
                 </Suspense>
               )}
-              {tab === 'resources' && <ResourcesView sector={sector} setSector={setSector} />}
+              {currentTab === 'resources' && <ResourcesView sector={sector} setSector={setSector} />}
+              {currentTab === 'admin' && isAdmin && (
+                <Suspense fallback={<div className="flex items-center justify-center h-[60vh]"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+                  <AdminView />
+                </Suspense>
+              )}
             </>
           )}
         </div>
@@ -130,12 +155,14 @@ function Shell() {
         />
       )}
 
-      <CreateCompanyModal
-        isOpen={creating}
-        onClose={() => setCreating(false)}
-        sector={sector}
-        onCreated={(s, created) => setOpen({ sector: s, id: created.id })}
-      />
+      {isAdmin && (
+        <CreateCompanyModal
+          isOpen={creating}
+          onClose={() => setCreating(false)}
+          sector={sector}
+          onCreated={(s, created) => setOpen({ sector: s, id: created.id })}
+        />
+      )}
 
       <EmailSendModal
         isOpen={!!emailTarget}
@@ -171,9 +198,26 @@ function App() {
   // Los datos se cargan recién con la sesión iniciada (las rules de Firestore lo exigen)
   return (
     <DataProvider>
-      <Shell />
+      <ResourcesProvider>
+        <Gate />
+      </ResourcesProvider>
     </DataProvider>
   );
+}
+
+// Los invitados pasan primero por el paso a paso (perfil, CVs, email, Gmail)
+function Gate() {
+  const { isAdmin } = useAuth();
+  const { loading, profile } = useResources();
+  if (!isAdmin && loading) {
+    return (
+      <div className="flex items-center justify-center h-dvh bg-bg">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  if (!isAdmin && !profile?.onboarded) return <Onboarding />;
+  return <Shell />;
 }
 
 export default App;

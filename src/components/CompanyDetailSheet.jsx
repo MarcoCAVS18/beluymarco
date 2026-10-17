@@ -37,7 +37,7 @@ const placeWithCountry = (c) => {
 };
 
 const CompanyDetailSheet = ({ company, sector, onClose, onSendEmail }) => {
-  const { update, statusOptions } = useData();
+  const { update, statusOptions, isAdmin } = useData();
   const meta = SECTORS[sector];
   const [form, setForm] = useState(() => formFrom(company, sector));
   const [saving, setSaving] = useState(false);
@@ -68,6 +68,19 @@ const CompanyDetailSheet = ({ company, sector, onClose, onSendEmail }) => {
 
   const save = async () => {
     const updates = {};
+    if (!isAdmin) {
+      if (form.notes !== original.notes) updates.notes = form.notes;
+      if (!Object.keys(updates).length) return;
+      try {
+        setSaving(true);
+        await update(sector, company.id, updates);
+      } catch (error) {
+        console.error('Error guardando notas:', error);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     if (form.name !== original.name) updates.name = form.name;
     if (form.email !== original.email) updates.email = form.email;
     if (form.emailVerified !== original.emailVerified) updates.emailVerified = form.emailVerified;
@@ -203,67 +216,100 @@ const CompanyDetailSheet = ({ company, sector, onClose, onSendEmail }) => {
           </div>
         </div>
 
-        {/* Contacto */}
-        <div className="space-y-3">
-          <Field label="Email">
-            <input type="email" value={form.email} onChange={set('email')} placeholder="contacto@empresa.com" className={inputClass} />
-          </Field>
-          {form.email && (
-            <button
-              type="button"
-              onClick={() => setForm((f) => ({ ...f, emailVerified: !f.emailVerified }))}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium ${
-                form.emailVerified ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                {form.emailVerified ? <ShieldCheck size={16} /> : <ShieldAlert size={16} />}
-                {form.emailVerified ? 'Email verificado' : 'Email sin verificar'}
-              </span>
-              <span className="text-xs underline underline-offset-2">{form.emailVerified ? 'Marcar sin verificar' : 'Confirmar'}</span>
-            </button>
-          )}
-          {sector === 'kyc' && (
-            <Field label="Link de aplicación (si no hay email)">
-              <div className="flex gap-2">
-                <input type="url" value={form.applyUrl} onChange={set('applyUrl')} placeholder="https://..." className={inputClass} />
-                {form.applyUrl && (
-                  <a href={form.applyUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 w-11 flex items-center justify-center rounded-xl bg-surface text-kyc" aria-label="Abrir link">
-                    <ExternalLink size={16} />
-                  </a>
-                )}
-              </div>
-            </Field>
-          )}
-        </div>
+        {isAdmin ? (
+          <>
+            {/* Contacto */}
+            <div className="space-y-3">
+              <Field label="Email">
+                <input type="email" value={form.email} onChange={set('email')} placeholder="contacto@empresa.com" className={inputClass} />
+              </Field>
+              {form.email && (
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, emailVerified: !f.emailVerified }))}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium ${
+                    form.emailVerified ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    {form.emailVerified ? <ShieldCheck size={16} /> : <ShieldAlert size={16} />}
+                    {form.emailVerified ? 'Email verificado' : 'Email sin verificar'}
+                  </span>
+                  <span className="text-xs underline underline-offset-2">{form.emailVerified ? 'Marcar sin verificar' : 'Confirmar'}</span>
+                </button>
+              )}
+              {sector === 'kyc' && (
+                <Field label="Link de aplicación (si no hay email)">
+                  <div className="flex gap-2">
+                    <input type="url" value={form.applyUrl} onChange={set('applyUrl')} placeholder="https://..." className={inputClass} />
+                    {form.applyUrl && (
+                      <a href={form.applyUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 w-11 flex items-center justify-center rounded-xl bg-surface text-kyc" aria-label="Abrir link">
+                        <ExternalLink size={16} />
+                      </a>
+                    )}
+                  </div>
+                </Field>
+              )}
+            </div>
 
-        {/* Datos */}
-        <div className="space-y-3">
-          <Field label={meta.nameLabel}>
-            <input type="text" value={form.name} onChange={set('name')} className={inputClass} />
-          </Field>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="Ubicación">
-              <div className="relative">
-                <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                <input type="text" value={form.location} onChange={set('location')} placeholder="Ciudad, región" className={`${inputClass} pl-9`} />
+            {/* Datos */}
+            <div className="space-y-3">
+              <Field label={meta.nameLabel}>
+                <input type="text" value={form.name} onChange={set('name')} className={inputClass} />
+              </Field>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Ubicación">
+                  <div className="relative">
+                    <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                    <input type="text" value={form.location} onChange={set('location')} placeholder="Ciudad, región" className={`${inputClass} pl-9`} />
+                  </div>
+                </Field>
+                <Field label="País">
+                  <CountrySelect value={form.country} onChange={set('country')} />
+                </Field>
               </div>
+              <Field label={meta.seasonLabel}>
+                <input type="text" value={form.season} onChange={set('season')} placeholder={meta.seasonPlaceholder} className={inputClass} />
+              </Field>
+              <Field label="Notas">
+                <textarea value={form.notes} onChange={set('notes')} rows={3} placeholder="¿Respondieron? ¿Qué dijeron?" className={`${inputClass} resize-none`} />
+              </Field>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Datos de la empresa: solo lectura para los invitados (el catálogo lo mantiene el admin) */}
+            <div className="bg-surface rounded-2xl divide-y divide-line">
+              <InfoRow label="Email" value={company.email || 'Sin email'} mono={!!company.email} />
+              {sector === 'kyc' && company.applyUrl && (
+                <InfoRow
+                  label="Link de aplicación"
+                  value={
+                    <a href={company.applyUrl} target="_blank" rel="noopener noreferrer" className="text-kyc inline-flex items-center gap-1">
+                      Abrir <ExternalLink size={13} />
+                    </a>
+                  }
+                />
+              )}
+              <InfoRow label="Ubicación" value={placeWithCountry(company)} />
+              {company[meta.seasonField] && <InfoRow label={meta.seasonLabel} value={company[meta.seasonField]} />}
+            </div>
+            <Field label="Tus notas (solo las ves vos)">
+              <textarea value={form.notes} onChange={set('notes')} rows={3} placeholder="¿Respondieron? ¿Qué dijeron?" className={`${inputClass} resize-none`} />
             </Field>
-            <Field label="País">
-              <CountrySelect value={form.country} onChange={set('country')} />
-            </Field>
-          </div>
-          <Field label={meta.seasonLabel}>
-            <input type="text" value={form.season} onChange={set('season')} placeholder={meta.seasonPlaceholder} className={inputClass} />
-          </Field>
-          <Field label="Notas">
-            <textarea value={form.notes} onChange={set('notes')} rows={3} placeholder="¿Respondieron? ¿Qué dijeron?" className={`${inputClass} resize-none`} />
-          </Field>
-        </div>
+          </>
+        )}
       </div>
     </Sheet>
   );
 };
+
+const InfoRow = ({ label, value, mono }) => (
+  <div className="flex items-start justify-between gap-3 px-4 py-3">
+    <span className="text-xs font-medium text-muted pt-0.5 shrink-0">{label}</span>
+    <span className={`text-sm text-right break-all ${mono ? 'font-mono' : ''}`}>{value}</span>
+  </div>
+);
 
 const QuickAction = ({ icon, label, onClick, href, disabled, accent = 'text-ink' }) => {
   const Icon = icon;

@@ -1,17 +1,19 @@
 import { useMemo, useState } from 'react';
-import { Search, X, FileText, ChevronRight, LogOut, MessageCircle } from 'lucide-react';
+import { Search, X, FileText, ChevronRight, LogOut, MessageCircle, ShieldCheck } from 'lucide-react';
 import CountryFlag from './CountryFlag';
 import StatusPill from './ui/StatusPill';
 import StatusBar from './ui/StatusBar';
 import { useData } from '../hooks/useFirebaseData';
 import { useAuth } from '../hooks/useAuth';
-import { SECTORS, SECTOR_IDS, ACTIVE_STATUSES, countryName, displayPlace } from '../data/sectors';
+import { useResources } from '../hooks/useResources';
+import { SECTORS, ACTIVE_STATUSES, countryName, displayPlace } from '../data/sectors';
 import { isRecentlyAdded } from '../data/constants';
 import { normalizeText } from '../utils/geo';
 
-const HomeView = ({ goToCompanies, goToResources, onOpenCompany }) => {
-  const { data, counts, statusCounts, conversations: convBySector, selected } = useData();
-  const { user, signOut } = useAuth();
+const HomeView = ({ goToCompanies, goToResources, goToAdmin, onOpenCompany }) => {
+  const { data, counts, statusCounts, conversations: convBySector, selected, sectors } = useData();
+  const { user, isAdmin, signOut } = useAuth();
+  const { profile } = useResources();
   const [query, setQuery] = useState('');
   const [menu, setMenu] = useState(false);
   const [allConversations, setAllConversations] = useState(false);
@@ -20,7 +22,7 @@ const HomeView = ({ goToCompanies, goToResources, onOpenCompany }) => {
   const summary = useMemo(
     () =>
       Object.fromEntries(
-        SECTOR_IDS.map((id) => {
+        sectors.map((id) => {
           const sc = statusCounts[id] || {};
           const byCountry = counts[id];
           return [
@@ -34,20 +36,20 @@ const HomeView = ({ goToCompanies, goToResources, onOpenCompany }) => {
           ];
         })
       ),
-    [counts, statusCounts, data]
+    [sectors, counts, statusCounts, data]
   );
 
   // Empresas que respondieron (lo más importante para seguir)
   const conversations = useMemo(
-    () => SECTOR_IDS.flatMap((id) => convBySector[id].filter((c) => !c.hidden).map((c) => ({ ...c, sector: id }))),
-    [convBySector]
+    () => sectors.flatMap((id) => convBySector[id].filter((c) => !c.hidden).map((c) => ({ ...c, sector: id }))),
+    [sectors, convBySector]
   );
 
   // Países con más empresas, sumando todos los rubros (conteos del servidor).
   // La barra de estados solo se puede mostrar para los países ya cargados.
   const countries = useMemo(() => {
     const map = new Map();
-    for (const id of SECTOR_IDS) {
+    for (const id of sectors) {
       for (const [code, n] of Object.entries(counts[id] || {})) {
         if (!map.has(code)) map.set(code, { code, total: 0, bySector: {}, byStatus: {}, loaded: 0 });
         const s = map.get(code);
@@ -62,7 +64,7 @@ const HomeView = ({ goToCompanies, goToResources, onOpenCompany }) => {
       }
     }
     return [...map.values()].sort((a, b) => b.total - a.total).slice(0, 12);
-  }, [counts, data]);
+  }, [sectors, counts, data]);
 
   // Búsqueda en todos los rubros, sobre los países cargados y las conversaciones
   const q = normalizeText(query);
@@ -70,7 +72,7 @@ const HomeView = ({ goToCompanies, goToResources, onOpenCompany }) => {
     if (q.length < 2) return [];
     const out = [];
     const seen = new Set();
-    for (const id of SECTOR_IDS) {
+    for (const id of sectors) {
       for (const c of [...convBySector[id], ...data[id]]) {
         const key = `${id}-${c.id}`;
         if (c.hidden || seen.has(key)) continue;
@@ -82,11 +84,20 @@ const HomeView = ({ goToCompanies, goToResources, onOpenCompany }) => {
       }
     }
     return out;
-  }, [data, convBySector, q]);
+  }, [sectors, data, convBySector, q]);
 
-  const loadedCountries = SECTOR_IDS.reduce((n, id) => n + selected[id].length, 0);
+  const loadedCountries = sectors.reduce((n, id) => n + selected[id].length, 0);
 
-  const initials = 'MB';
+  // Saludo con el nombre del perfil (el admin sigue siendo "Marco y Belu")
+  const name = profile?.displayName || (user?.displayName || '').split(' ')[0] || '';
+  const initials = isAdmin
+    ? 'MB'
+    : name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((w) => w[0].toUpperCase())
+        .join('') || '?';
 
   return (
     <div className="space-y-7">
@@ -96,7 +107,7 @@ const HomeView = ({ goToCompanies, goToResources, onOpenCompany }) => {
           <h1 className="text-[2rem] leading-tight font-bold tracking-tight">
             ¡Hola!
             <br />
-            Marco y Belu
+            {name}
           </h1>
           <p className="text-muted mt-1">Organicemos la búsqueda de trabajo.</p>
         </div>
@@ -111,6 +122,12 @@ const HomeView = ({ goToCompanies, goToResources, onOpenCompany }) => {
           {menu && (
             <div className="absolute right-0 mt-2 w-60 bg-card rounded-2xl shadow-xl border border-line p-2 z-30 fade-in">
               <div className="px-3 py-2 text-xs text-muted truncate">{user?.email}</div>
+              {isAdmin && (
+                <button onClick={goToAdmin} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm hover:bg-surface">
+                  <ShieldCheck size={16} className="text-primary" />
+                  Panel de admin
+                </button>
+              )}
               <button onClick={signOut} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm hover:bg-surface text-red-600">
                 <LogOut size={16} />
                 Cerrar sesión
@@ -159,7 +176,7 @@ const HomeView = ({ goToCompanies, goToResources, onOpenCompany }) => {
       {q.length < 2 && (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {SECTOR_IDS.map((id) => {
+            {sectors.map((id) => {
               const s = SECTORS[id];
               const Icon = s.icon;
               const sum = summary[id];
@@ -230,7 +247,7 @@ const HomeView = ({ goToCompanies, goToResources, onOpenCompany }) => {
                     <div className="text-xs text-muted tabular-nums">{c.total.toLocaleString('es')} empresas</div>
                     {c.loaded > 0 ? <StatusBar byStatus={c.byStatus} total={c.loaded} /> : <div className="h-2 mt-3 rounded-full bg-surface" />}
                     <div className="flex gap-2 mt-2.5">
-                      {SECTOR_IDS.filter((id) => c.bySector[id]).map((id) => (
+                      {sectors.filter((id) => c.bySector[id]).map((id) => (
                         <span key={id} className={`text-[11px] font-medium px-1.5 py-0.5 rounded-md ${SECTORS[id].tint} ${SECTORS[id].text}`}>
                           {SECTORS[id].short} {c.bySector[id]}
                         </span>

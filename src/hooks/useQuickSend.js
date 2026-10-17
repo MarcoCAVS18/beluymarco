@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { quickSendEmail } from '../services/quickSend';
+import { composeEmail } from '../services/quickSend';
+import { sendAs } from '../services/mailer';
 import { useData } from './useFirebaseData';
+import { useAuth } from './useAuth';
+import { useResources } from './useResources';
 
 // Envío rápido de una empresa: spinner -> tilde -> recién ahí marca "Sent".
 // La demora antes de actualizar el estado evita que la tarjeta desaparezca a mitad
 // de la animación cuando la lista está filtrada por "Pendiente".
 export const useQuickSend = (company, sector, { onDone, onError } = {}) => {
   const { update } = useData();
+  const { isAdmin, getGmailToken } = useAuth();
+  const resources = useResources();
   const [state, setState] = useState('idle'); // idle | sending | done | error
   const timers = useRef([]);
 
@@ -16,7 +21,11 @@ export const useQuickSend = (company, sector, { onDone, onError } = {}) => {
     if (state === 'sending' || state === 'done') return;
     setState('sending');
     try {
-      await quickSendEmail(company, sector);
+      if (!company?.email) throw new Error('La empresa no tiene email');
+      const mail = composeEmail(company, sector, resources, { isAdmin });
+      if (!mail.body.trim()) throw new Error('Todavía no cargaste el email para este rubro (Recursos)');
+      const attachments = await resources.attachmentsFor(sector);
+      await sendAs({ isAdmin, getGmailToken }, { ...mail, attachments: attachments.length ? attachments : undefined });
       setState('done');
       timers.current.push(
         setTimeout(async () => {
@@ -35,7 +44,7 @@ export const useQuickSend = (company, sector, { onDone, onError } = {}) => {
       setState('error');
       onError?.(err);
     }
-  }, [state, company, sector, update, onDone, onError]);
+  }, [state, company, sector, resources, isAdmin, getGmailToken, update, onDone, onError]);
 
   return { state, send };
 };

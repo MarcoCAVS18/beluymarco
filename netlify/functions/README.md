@@ -3,6 +3,10 @@
 Functions:
 
 - `gmail-oauth-exchange.js`: recibe el `code` que Google manda por redirect y lo intercambia por tokens (setup único).
+- `catalog.js`: catálogo de empresas para los **invitados**. Verifica el ID token, que la invitación
+  en `/members` esté activa y que el rubro esté habilitado, y devuelve solo los campos públicos
+  (nunca estados, notas ni ocultas del admin). Lee con la cuenta de servicio de solo lectura
+  (`FIREBASE_SA_KEY`). Ver `docs/INVITACIONES.md`.
 - `send-email.js`: usa el refresh token guardado para enviar el email vía Gmail API. Requiere un
   header `Authorization: Bearer <idToken>` de Firebase Auth de la cuenta autorizada (mismo email
   que valida `firestore.rules`); sin eso devuelve 401. Esto evita que cualquiera que descubra la
@@ -16,6 +20,7 @@ Functions:
 - `GOOGLE_REFRESH_TOKEN` -> se obtiene una sola vez con el paso 3
 - `VITE_FIREBASE_API_KEY` -> ya existe para el build del frontend; `send-email` la reusa para
   validar el idToken contra la API de Identity Toolkit.
+- `FIREBASE_SA_KEY` -> JSON de la cuenta de servicio de solo lectura (para `catalog.js`).
 - `VITE_ALLOWED_EMAIL` -> opcional, mismo default que `firestore.rules` (`marcopiermatei1@gmail.com`).
 
 ## Pasos de setup (una sola vez)
@@ -31,7 +36,7 @@ https://accounts.google.com/o/oauth2/v2/auth?client_id=TU_CLIENT_ID&redirect_uri
 4. Tras cambiar la variable, hacer Trigger deploy en Netlify: las functions leen las env vars al deployar.
 5. Listo: `send-email` ya puede autenticar y enviar emails usando ese refresh token.
 
-## ⚠️ "Token has been expired or revoked"
+## Aviso: "Token has been expired or revoked"
 
 Si la app OAuth está en modo **Testing** en Google Cloud Console, Google expira los refresh
 tokens **a los 7 días** y send-email devuelve 500 con ese mensaje. Solución definitiva:

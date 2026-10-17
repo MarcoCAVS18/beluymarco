@@ -1,8 +1,13 @@
+import { useContext } from 'react';
 import { SECTORS, SECTOR_IDS } from '../data/sectors';
+import { DataContext } from '../contexts/dataContext';
 
 // Selector de rubro tipo "segmented control": ocupa todo el ancho en el celular.
-const SectorToggle = ({ sector, onSectorChange, includeKyc = true, counts }) => {
-  const ids = includeKyc ? SECTOR_IDS : SECTOR_IDS.filter((id) => id !== 'kyc');
+// Muestra solo los rubros habilitados para la cuenta; con uno solo no hace falta mostrarlo.
+const SectorToggle = ({ sector, onSectorChange, counts }) => {
+  const ctx = useContext(DataContext);
+  const ids = ctx?.sectors?.length ? ctx.sectors : SECTOR_IDS;
+  if (ids.length < 2) return null;
   return (
     <div className="flex w-full sm:w-auto sm:inline-flex bg-card border border-line rounded-2xl p-1 gap-1">
       {ids.map((id) => {

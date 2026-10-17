@@ -1,0 +1,69 @@
+// Envío de emails según la cuenta:
+//  - Admin: la Netlify Function send-email, con el Gmail del admin (como siempre).
+//  - Invitado: directo desde el navegador a la Gmail API con SU cuenta. El permiso
+//    (gmail.send) lo da él con un popup de Google, dura ~1 h y queda solo en memoria.
+import { sendEmail as sendViaFunction } from './gmailService';
+
+const SEND_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
+
+const utf8ToBase64 = (text) => {
+  const bytes = new TextEncoder().encode(text);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(binary);
+};
+
+// Mensaje RFC 2822 en base64url, igual que arma netlify/functions/send-email.js
+const buildRawMessage = ({ to, subject, body, attachments }) => {
+  const headers = [`To: ${to}`, `Subject: =?UTF-8?B?${utf8ToBase64(subject)}?=`, 'MIME-Version: 1.0'];
+  let message;
+  if (attachments?.length) {
+    const boundary = `mixed_${Date.now().toString(36)}`;
+    const parts = [...headers, `Content-Type: multipart/mixed; boundary="${boundary}"`, '', `--${boundary}`, 'Content-Type: text/plain; charset="UTF-8"', 'Content-Transfer-Encoding: base64', '', utf8ToBase64(body).replace(/.{1,76}/g, '$&\r\n').trimEnd()];
+    for (const att of attachments) {
+      const name = att.filename.replace(/"/g, '');
+      parts.push(
+        `--${boundary}`,
+        `Content-Type: ${att.contentType || 'application/octet-stream'}; name="${name}"`,
+        'Content-Transfer-Encoding: base64',
+        `Content-Disposition: attachment; filename="${name}"`,
+        '',
+        att.data.replace(/.{1,76}/g, '$&\r\n').trimEnd()
+      );
+    }
+    parts.push(`--${boundary}--`);
+    message = parts.join('\r\n');
+  } else {
+    message = [...headers, 'Content-Type: text/plain; charset="UTF-8"', 'Content-Transfer-Encoding: base64', '', utf8ToBase64(body)].join('\r\n');
+  }
+  return utf8ToBase64(message).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+const sendFromBrowser = async (token, payload) => {
+  const res = await fetch(SEND_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ raw: buildRawMessage(payload) }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.error?.message || 'Gmail no pudo enviar el email');
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+};
+
+// `getGmailToken` viene de useAuth (pide permiso si hace falta)
+export const sendAs = async ({ isAdmin, getGmailToken }, payload) => {
+  if (isAdmin) return sendViaFunction(payload);
+  let token = await getGmailToken();
+  try {
+    return await sendFromBrowser(token, payload);
+  } catch (err) {
+    // Si Google revocó o venció el permiso antes de tiempo, se pide de nuevo una vez
+    if (err.status !== 401) throw err;
+    token = await getGmailToken({ force: true });
+    return sendFromBrowser(token, payload);
+  }
+};

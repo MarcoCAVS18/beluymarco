@@ -22,8 +22,8 @@ export function personalizeGreeting(content, companyName) {
   return content.replace(/^(Dear|Hi|Hello)\s+Team(,?)/i, `$1 ${companyName} Team$2`);
 }
 
-// Asunto por defecto según el rubro. Para rubros sin asunto predefinido
-// arma uno genérico con el nombre de la empresa.
-export function getDefaultSubject(sector, companyName) {
-  return DEFAULT_SUBJECTS[sector] || `Job Application - ${companyName || ''}`.trim();
+// Asunto por defecto según el rubro. Los predefinidos son los del admin (Belu y Marco);
+// para los invitados, o rubros sin asunto, uno genérico con el nombre de la empresa.
+export function getDefaultSubject(sector, companyName, { isAdmin = true } = {}) {
+  return (isAdmin && DEFAULT_SUBJECTS[sector]) || `Job Application - ${companyName || ''}`.trim();
 }

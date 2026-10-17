@@ -1,13 +1,138 @@
 rules_version = '2';
 
+// Seguridad de la app multiusuario. Estas reglas corren en los servidores de Google:
+// no importa qué haga alguien desde la consola del navegador o llamando a la API a
+// mano, cada lectura y escritura pasa por acá.
+//
+// - Admin: una sola cuenta, fija en este archivo y con email verificado por Google.
+//   Tiene acceso a todo lo de siempre (catálogo, templates, config, members).
+// - Miembros: solo quienes el admin invitó en /members/{email} con status 'active'.
+//   NO leen el catálogo directo (los documentos tienen los estados y notas del admin):
+//   lo reciben filtrado por la función de Netlify `catalog`, que controla sus rubros.
+//   Lo único que pueden escribir es lo suyo, en /users/{su-email}.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Acceso restringido: solo la cuenta de Google autorizada (uso personal,
-    // un solo usuario) puede leer/escribir cualquier colección.
-    match /{document=**} {
-      allow read, write: if request.auth != null
-        && request.auth.token.email == 'marcopiermatei1@gmail.com';
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.email == 'marcopiermatei1@gmail.com';
+    }
+
+    function memberDoc() {
+      return /databases/$(database)/documents/members/$(myEmail());
+    }
+
+    function isActiveMember() {
+      return signedIn() && exists(memberDoc()) && get(memberDoc()).data.status == 'active';
+    }
+
+    function memberSectors() {
+      return get(memberDoc()).data.sectors;
+    }
+
+    // El dueño de /users/{email}: miembro activo (o el admin) con ese mismo email
+    function isOwner(email) {
+      return (isActiveMember() || isAdmin()) && email == myEmail();
+    }
+
+    function shortString(v, max) {
+      return v is string && v.size() <= max;
+    }
+
+    // ==================== DATOS EXISTENTES: SOLO ADMIN ====================
+    // Catálogo (wineries, housekeeping, kyc), templates, subjects, config, members...
+    // Igual que antes de las invitaciones. Se excluye /users para que ni el admin
+    // lea las notas privadas de los invitados.
+    match /{collection}/{document=**} {
+      allow read, write: if isAdmin() && collection != 'users';
+    }
+
+    // ==================== MIEMBROS ====================
+    // Cada uno puede leer solo su invitación (para saber sus rubros). Escribe solo el admin.
+    match /members/{email} {
+      allow read: if signedIn() && email == myEmail();
+    }
+
+    // Conteos del catálogo por país (sin datos de empresas). Lo mantiene el admin.
+    match /stats/{doc} {
+      allow read: if isActiveMember();
+    }
+
+    // ==================== DATOS DE CADA USUARIO ====================
+    match /users/{email} {
+      // Perfil: nombre para el saludo, firma, teléfono y si terminó el paso a paso
+      allow read, delete: if isOwner(email);
+      allow create, update: if isOwner(email)
+        && request.resource.data.keys().hasOnly(['displayName', 'greeting', 'signature', 'phone', 'onboarded', 'createdAt', 'updatedAt'])
+        && shortString(request.resource.data.get('displayName', ''), 80)
+        && shortString(request.resource.data.get('greeting', ''), 120)
+        && shortString(request.resource.data.get('signature', ''), 500)
+        && shortString(request.resource.data.get('phone', ''), 60)
+        && request.resource.data.get('onboarded', false) is bool;
+
+      // Estado / notas / ocultas por empresa. Solo de rubros que el admin le habilitó.
+      match /applications/{appId} {
+        allow read, delete: if isOwner(email);
+        allow create, update: if isOwner(email)
+          && request.resource.data.keys().hasOnly(['sector', 'companyId', 'status', 'notes', 'hidden', 'name', 'country', 'location', 'email', 'updatedAt'])
+          && request.resource.data.sector in ['winery', 'housekeeping', 'kyc']
+          && (isAdmin() || request.resource.data.sector in memberSectors())
+          && appId == request.resource.data.sector + '_' + string(request.resource.data.companyId)
+          && request.resource.data.status in ['Pending', 'Sent', 'Replied', 'Interview', 'Offer', 'Rejected']
+          && shortString(request.resource.data.get('notes', ''), 5000)
+          && request.resource.data.get('hidden', false) is bool
+          && shortString(request.resource.data.get('name', ''), 300)
+          && shortString(request.resource.data.get('country', ''), 4)
+          && shortString(request.resource.data.get('location', ''), 300)
+          && shortString(request.resource.data.get('email', ''), 300);
+      }
+
+      // Cuerpo de email y cover letter por rubro
+      match /templates/{templateId} {
+        allow read, delete: if isOwner(email);
+        allow create, update: if isOwner(email)
+          && templateId in ['winery-email', 'housekeeping-email', 'kyc-email', 'winery-cover-letter', 'housekeeping-cover-letter', 'kyc-cover-letter']
+          && request.resource.data.keys().hasOnly(['content', 'updatedAt'])
+          && shortString(request.resource.data.content, 20000);
+      }
+
+      // Asuntos de email guardados
+      match /subjects/{subjectId} {
+        allow read, delete: if isOwner(email);
+        allow create, update: if isOwner(email)
+          && request.resource.data.keys().hasOnly(['sector', 'text', 'createdAt'])
+          && request.resource.data.sector in ['winery', 'housekeeping', 'kyc']
+          && shortString(request.resource.data.text, 300);
+      }
+
+      // PDFs (CVs, cover letters, documentos), partidos en pedazos para entrar gratis en Firestore.
+      // Tope por archivo: 6 MB (8 MB en base64, repartidos en hasta 10 pedazos de 900.000 caracteres).
+      match /files/{fileId} {
+        allow read, delete: if isOwner(email);
+        allow create, update: if isOwner(email)
+          && request.resource.data.keys().hasOnly(['name', 'kind', 'sector', 'size', 'chunks', 'contentType', 'createdAt'])
+          && shortString(request.resource.data.name, 200)
+          && request.resource.data.kind in ['resume', 'cover', 'other']
+          && request.resource.data.sector in ['winery', 'housekeeping', 'kyc', 'all']
+          && request.resource.data.size is int && request.resource.data.size > 0 && request.resource.data.size <= 6291456
+          && request.resource.data.chunks is int && request.resource.data.chunks >= 1 && request.resource.data.chunks <= 10
+          && request.resource.data.contentType == 'application/pdf';
+
+        match /chunks/{chunkId} {
+          allow read, delete: if isOwner(email);
+          allow create: if isOwner(email)
+            && chunkId in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+            && request.resource.data.keys().hasOnly(['data'])
+            && shortString(request.resource.data.data, 900000);
+        }
+      }
     }
   }
 }
