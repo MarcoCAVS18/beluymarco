@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, UserPlus, ShieldCheck, ShieldOff, Trash2, Copy, Check, Send, Gauge, RefreshCw, CircleCheck, TriangleAlert, OctagonAlert, MessageCircle, Pencil } from 'lucide-react';
+import { Loader2, UserPlus, ShieldCheck, ShieldOff, Trash2, Copy, Check, Send, Gauge, MessageCircle, Pencil } from 'lucide-react';
 import Sheet from './ui/Sheet';
 import { useAuth } from '../hooks/useAuth';
-import { listMembers, saveMember, setMemberStatus, deleteMember, getUsage, FREE_LIMITS } from '../firebase/adminServices';
-import { MONITORING_SCOPE, ADMIN_EMAIL } from '../contexts/authContext';
+import { listMembers, saveMember, setMemberStatus, deleteMember, pacificMidnight, FREE_LIMITS } from '../firebase/adminServices';
+import { ADMIN_EMAIL } from '../contexts/authContext';
 import { sendAs } from '../services/mailer';
 import { SECTORS, SECTOR_IDS } from '../data/sectors';
 
@@ -26,128 +26,43 @@ const AdminView = () => {
 };
 
 // ==================== USO ====================
-const level = (pct) =>
-  pct >= 80
-    ? { label: 'Cerca del límite', icon: OctagonAlert, text: 'text-red-700', bar: 'bg-red-600', tint: 'bg-red-50' }
-    : pct >= 50
-      ? { label: 'Atención', icon: TriangleAlert, text: 'text-amber-700', bar: 'bg-amber-500', tint: 'bg-amber-50' }
-      : { label: 'Bien', icon: CircleCheck, text: 'text-green-700', bar: 'bg-green-600', tint: 'bg-green-50' };
+// La API de métricas de Google (Cloud Monitoring) exige facturación activada, así que en el
+// plan gratis el uso real se mira en la consola de Firebase, que sí lo muestra sin costo.
+const USAGE_URL = `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/databases/-default-/usage`;
 
-const resetTime = (since) =>
-  new Date(since.getTime() + 86400000).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
-
-const UsagePanel = () => {
-  const { getGoogleToken } = useAuth();
-  const [usage, setUsage] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const load = async (force = false) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const token = await getGoogleToken(MONITORING_SCOPE, { force });
-      setUsage(await getUsage(token, PROJECT_ID));
-    } catch (err) {
-      console.error('Error leyendo uso:', err);
-      setError(err.status === 403 ? 'Google no dejó leer las métricas. Revisá que el permiso de monitoreo esté habilitado (ver guía).' : err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const meters = usage
-    ? [
-        { key: 'reads', label: 'Lecturas', used: usage.today.reads, limit: FREE_LIMITS.reads },
-        { key: 'writes', label: 'Escrituras', used: usage.today.writes, limit: FREE_LIMITS.writes },
-        { key: 'deletes', label: 'Borrados', used: usage.today.deletes, limit: FREE_LIMITS.deletes },
-      ]
-    : [];
-  const maxDay = usage ? Math.max(FREE_LIMITS.reads, ...usage.days.map((d) => d.reads)) : 1;
-
-  return (
-    <section>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          <Gauge size={20} className="text-primary" /> Uso de hoy
-        </h2>
-        {usage && (
-          <button onClick={() => load()} disabled={loading} className="text-sm text-primary font-medium flex items-center gap-1.5 disabled:opacity-60">
-            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} /> Actualizar
-          </button>
-        )}
-      </div>
-      <p className="text-sm text-muted mb-4">
-        Plan gratis (Spark): si se llega al 100%, la app deja de leer hasta que se reinicia la cuota. Nunca se cobra nada.
-      </p>
-
-      {!usage ? (
-        <div className="bg-card rounded-3xl p-5 shadow-sm text-center">
-          <p className="text-sm text-muted mb-4">Para ver el uso real, Google te pide un permiso de solo lectura de métricas (una vez por hora).</p>
-          <button onClick={() => load()} disabled={loading} className="px-5 py-3 rounded-2xl bg-primary text-white text-sm font-semibold inline-flex items-center gap-2 disabled:opacity-60">
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <Gauge size={16} />}
-            Ver uso
-          </button>
-          {error && <p className="text-sm text-red-700 bg-red-50 rounded-xl p-3 mt-4 text-left">{error}</p>}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {meters.map((m) => {
-              const pct = Math.min(100, (m.used / m.limit) * 100);
-              const lv = level(pct);
-              const Icon = lv.icon;
-              return (
-                <div key={m.key} className="bg-card rounded-3xl p-4 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted">{m.label}</span>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1 ${lv.tint} ${lv.text}`}>
-                      <Icon size={12} /> {lv.label}
-                    </span>
-                  </div>
-                  <div className="text-2xl font-bold tabular-nums mt-1">
-                    {m.used.toLocaleString('es')}
-                    <span className="text-sm font-normal text-muted"> / {m.limit.toLocaleString('es')}</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-surface mt-3 overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={m.limit} aria-valuenow={m.used} aria-label={m.label}>
-                    <div className={`h-full rounded-full ${lv.bar}`} style={{ width: `${Math.max(pct, 1)}%` }} />
-                  </div>
-                  <div className="text-xs text-muted mt-1.5 tabular-nums">{pct.toLocaleString('es', { maximumFractionDigits: pct < 10 ? 1 : 0 })}% de la cuota gratis</div>
-                </div>
-              );
-            })}
-          </div>
-
-          {usage.days.length > 1 && (
-            <div className="bg-card rounded-3xl p-4 shadow-sm">
-              <div className="text-sm font-medium">Lecturas por día (últimos 7)</div>
-              <div className="text-xs text-muted mb-3">La línea punteada es el límite gratis ({FREE_LIMITS.reads.toLocaleString('es')}).</div>
-              <div className="relative h-28 flex items-end gap-2">
-                <div className="absolute inset-x-0 border-t border-dashed border-muted/50" style={{ bottom: `${(FREE_LIMITS.reads / maxDay) * 100}%` }} />
-                {usage.days.map((d) => (
-                  <div key={d.day} className="flex-1 h-full flex items-end group relative" title={`${new Date(d.day).toLocaleDateString('es', { weekday: 'short', day: 'numeric' })}: ${d.reads.toLocaleString('es')} lecturas`}>
-                    <div className="w-full rounded-t bg-primary/80 group-hover:bg-primary" style={{ height: `${Math.max(2, (d.reads / maxDay) * 100)}%` }} />
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2 mt-1.5">
-                {usage.days.map((d) => (
-                  <span key={d.day} className="flex-1 text-center text-[10px] text-muted">
-                    {new Date(d.day).toLocaleDateString('es', { weekday: 'narrow' })}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <p className="text-xs text-muted">
-            Se reinicia todos los días a las {resetTime(usage.since)} (tu hora). Datos de Google Cloud, con unos minutos de atraso.
-          </p>
-        </div>
-      )}
-    </section>
-  );
+const resetTime = () => {
+  const since = pacificMidnight();
+  return new Date(since.getTime() + 86400000).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
 };
+
+const UsagePanel = () => (
+  <section>
+    <h2 className="text-xl font-semibold flex items-center gap-2 mb-3">
+      <Gauge size={20} className="text-primary" /> Uso de la cuota gratis
+    </h2>
+    <div className="bg-card rounded-3xl p-5 shadow-sm space-y-4">
+      <p className="text-sm text-muted">
+        Plan gratis (Spark): si se llega al límite del día, la app deja de leer hasta que se reinicia la cuota. <b className="text-ink">Nunca se cobra nada.</b>
+      </p>
+      <div className="grid grid-cols-3 gap-2 text-center">
+        {[
+          ['Lecturas', FREE_LIMITS.reads],
+          ['Escrituras', FREE_LIMITS.writes],
+          ['Borrados', FREE_LIMITS.deletes],
+        ].map(([label, n]) => (
+          <div key={label} className="bg-surface rounded-2xl p-3">
+            <div className="text-lg font-bold tabular-nums">{n.toLocaleString('es')}</div>
+            <div className="text-xs text-muted">{label} por día</div>
+          </div>
+        ))}
+      </div>
+      <a href={USAGE_URL} target="_blank" rel="noopener noreferrer" className="w-full py-3 rounded-2xl bg-primary text-white text-sm font-semibold flex items-center justify-center gap-2">
+        <Gauge size={16} /> Ver uso de hoy en Firebase
+      </a>
+      <p className="text-xs text-muted">La cuota se reinicia todos los días a las {resetTime()} (tu hora). En Firebase, la pestaña Uso muestra lecturas, escrituras y borrados del día.</p>
+    </div>
+  </section>
+);
 
 // ==================== INVITADOS ====================
 const MembersPanel = () => {

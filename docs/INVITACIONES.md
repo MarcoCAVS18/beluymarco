@@ -50,9 +50,8 @@ Si no tenés la CLI: `npm install -g firebase-tools` y `firebase login`.
 
 Google Cloud Console del proyecto `emails---trabajos` → **Google Auth Platform**:
 
-1. **Data access** → *Add or remove scopes* → agregar:
-   - `https://www.googleapis.com/auth/gmail.send` (enviar emails de los invitados)
-   - `https://www.googleapis.com/auth/monitoring.read` (panel de uso del admin)
+1. **Data access** → *Add or remove scopes* → agregar
+   `https://www.googleapis.com/auth/gmail.send` (enviar emails de los invitados).
 2. **Audience** → *Publishing status*:
    - **Testing**: cada invitado tiene que estar en *Test users* (hasta 100). El permiso
      de Gmail vence cada 7 días como máximo, igual la app lo pide de nuevo con un toque.
@@ -68,8 +67,9 @@ Google Cloud Console del proyecto `emails---trabajos` → **Google Auth Platform
 ## Costos
 
 Plan **Spark** (gratis): si se llega al límite diario (50.000 lecturas, 20.000 escrituras), la app
-deja de leer hasta la medianoche del Pacífico. **No se cobra nada nunca.** El panel **Uso de hoy**
-muestra cuánto se usó, con datos reales de Google Cloud.
+deja de leer hasta la medianoche del Pacífico. **No se cobra nada nunca.** El panel de admin tiene un
+botón a la pestaña **Uso** de Firebase, que muestra los números reales del día. (La API de métricas
+de Google Cloud no sirve para esto en Spark: exige facturación activada.)
 
 Los PDFs de los invitados se guardan partidos en pedazos dentro de Firestore (sin Storage, que
 pediría el plan Blaze): hasta 6 MB por archivo y 12 MB por persona.
