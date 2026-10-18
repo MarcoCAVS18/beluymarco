@@ -58,7 +58,22 @@ Google Cloud Console del proyecto `emails---trabajos` → **Google Auth Platform
    - **In production** (sin verificar): no hace falta cargar test users; los invitados ven la
      pantalla "Google no verificó esta app" → *Configuración avanzada* → *Ir a la app*.
 
-### 4. Probar
+### 4. Login por el propio dominio (iPhone / Safari)
+
+Safari aísla el almacenamiento entre dominios y el login vía `emails---trabajos.firebaseapp.com`
+falla con *"missing initial state"*. `netlify.toml` ya reenvía `/__/auth/*` y `/__/firebase/*` a
+Firebase; falta apuntar la app a tu dominio:
+
+1. Netlify → Environment variables → `VITE_FIREBASE_AUTH_DOMAIN` = tu dominio de Netlify
+   (por ejemplo `tu-sitio.netlify.app`, sin `https://`).
+2. Google Cloud → APIs y servicios → **Credenciales** → el cliente OAuth *"Web client (auto created
+   by Google Service)"*:
+   - **Orígenes de JavaScript autorizados**: `https://tu-sitio.netlify.app`
+   - **URIs de redireccionamiento autorizados**: `https://tu-sitio.netlify.app/__/auth/handler`
+3. Firebase → Authentication → Settings → **Authorized domains**: que esté `tu-sitio.netlify.app`.
+4. Netlify → **Trigger deploy** (la variable `VITE_` se usa al compilar).
+
+### 5. Probar
 
 1. Panel **Admin** → **Invitar** → un email de prueba (por ejemplo el de Belu) → elegir rubros.
 2. Abrir la app en otra ventana privada con esa cuenta → paso a paso → enviar un email de prueba.

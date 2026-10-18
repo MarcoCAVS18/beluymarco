@@ -8,3 +8,18 @@
 [functions]
   directory = "netlify/functions"
   included_files = ["netlify/functions/assets/**"]
+
+# Login de Firebase por el propio dominio: Safari (iPhone) y otros navegadores aíslan el
+# almacenamiento entre dominios y el login vía emails---trabajos.firebaseapp.com fallaba con
+# "missing initial state". Con esto, VITE_FIREBASE_AUTH_DOMAIN puede ser el dominio de Netlify.
+[[redirects]]
+  from = "/__/auth/*"
+  to = "https://emails---trabajos.firebaseapp.com/__/auth/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/__/firebase/*"
+  to = "https://emails---trabajos.firebaseapp.com/__/firebase/:splat"
+  status = 200
+  force = true
