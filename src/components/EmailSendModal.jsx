@@ -46,7 +46,8 @@ const EmailSendModal = ({ isOpen, company, sector, onClose, onSent }) => {
     setSendError(null);
     try {
       const attachments = attachResumes && sectorResumes.length ? await resources.attachmentsFor(sector) : undefined;
-      await sendAs({ isAdmin, getGmailToken }, { to: company.email, subject, body, attachments });
+      // Si se corta por tiempo pero el email sale igual, se marca enviado igual
+      await sendAs({ isAdmin, getGmailToken }, { to: company.email, subject, body, attachments }, { onLateSuccess: () => onSent?.(company) });
       setSent(true);
       onSent?.(company);
       setTimeout(() => {

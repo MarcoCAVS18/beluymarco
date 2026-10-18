@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Send, Check, Loader2, RotateCw } from 'lucide-react';
+import { Send, Check, Loader2, X } from 'lucide-react';
 
 const ACTION_W = 104; // ancho del botón que aparece al deslizar
 
@@ -67,8 +67,8 @@ const SwipeToSend = ({ enabled, isOpen, onOpenChange, state, onPress, color, res
     }
   };
 
-  const label = { idle: resend ? 'Reenviar' : 'Enviar', sending: 'Enviando', done: 'Enviado', error: 'Reintentar' }[state];
-  const Icon = { idle: Send, sending: Loader2, done: Check, error: RotateCw }[state];
+  const label = { idle: resend ? 'Reenviar' : 'Enviar', sending: 'Enviando', done: 'Enviado', error: 'No enviado' }[state];
+  const Icon = { idle: Send, sending: Loader2, done: Check, error: X }[state];
   const showAction = enabled && (offset < 0 || state !== 'idle');
 
   return (
@@ -85,6 +85,7 @@ const SwipeToSend = ({ enabled, isOpen, onOpenChange, state, onPress, color, res
         >
           <Icon size={22} className={state === 'sending' ? 'animate-spin' : state === 'done' ? 'animate-bounce' : ''} />
           {label}
+          {state === 'error' && <span className="text-[10px] font-normal text-white/80">Tocá para reintentar</span>}
         </button>
       )}
       <div

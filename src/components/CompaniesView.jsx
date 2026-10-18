@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Search, X, ChevronDown, CheckSquare, Square, Copy, Check, Download, EyeOff, Eye, Globe2, List, ChevronRight, ShieldCheck, ExternalLink, Loader2, Send, RotateCw } from 'lucide-react';
+import { Search, X, ChevronDown, CheckSquare, Square, Copy, Check, Download, EyeOff, Eye, Globe2, List, ChevronRight, ShieldCheck, ExternalLink, Loader2, Send } from 'lucide-react';
 import SectorToggle from './SectorToggle';
 import CountryFlag from './CountryFlag';
 import CountryPicker from './CountryPicker';
@@ -344,7 +344,7 @@ const CompanyRow = ({ company: c, sector, selecting, selected, swipeOpen, setSwi
 };
 
 const DesktopSend = ({ state, onPress, resend }) => {
-  const Icon = { idle: Send, sending: Loader2, done: Check, error: RotateCw }[state];
+  const Icon = { idle: Send, sending: Loader2, done: Check, error: X }[state];
   const tone = state === 'done' ? 'bg-green-600 text-white' : state === 'error' ? 'bg-red-600 text-white' : 'bg-surface text-primary hover:bg-primary hover:text-white';
   return (
     <button
@@ -353,8 +353,8 @@ const DesktopSend = ({ state, onPress, resend }) => {
         onPress();
       }}
       disabled={state === 'sending' || state === 'done'}
-      title={resend ? 'Reenviar email' : 'Enviar email'}
-      aria-label={resend ? 'Reenviar email' : 'Enviar email'}
+      title={state === 'error' ? 'No enviado: tocá para reintentar' : resend ? 'Reenviar email' : 'Enviar email'}
+      aria-label={state === 'error' ? 'No enviado, reintentar' : resend ? 'Reenviar email' : 'Enviar email'}
       className={`hidden lg:flex shrink-0 w-9 h-9 rounded-xl items-center justify-center transition-colors ${tone}`}
     >
       <Icon size={16} className={state === 'sending' ? 'animate-spin' : ''} />

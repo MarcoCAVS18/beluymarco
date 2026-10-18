@@ -6,6 +6,38 @@ import { sendEmail as sendViaFunction } from './gmailService';
 
 const SEND_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
 
+// Tiempo máximo para el envío en sí (no cuenta el rato en el popup de permiso de Google)
+export const SEND_TIMEOUT_MS = 20000;
+
+export class SendTimeoutError extends Error {
+  constructor() {
+    super('Gmail no respondió a tiempo. Revisá tu conexión y probá de nuevo.');
+    this.name = 'SendTimeoutError';
+  }
+}
+
+// Corta la espera a los `ms`. Si la promesa termina bien DESPUÉS del corte (el email
+// salió igual), avisa con `onLate` para no dejarlo marcado como no enviado.
+export const withTimeout = (promise, ms, onLate) =>
+  new Promise((resolve, reject) => {
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      reject(new SendTimeoutError());
+    }, ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        if (timedOut) onLate?.(value);
+        else resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        if (!timedOut) reject(err);
+      }
+    );
+  });
+
 const utf8ToBase64 = (text) => {
   const bytes = new TextEncoder().encode(text);
   let binary = '';
@@ -54,16 +86,18 @@ const sendFromBrowser = async (token, payload) => {
   return data;
 };
 
-// `getGmailToken` viene de useAuth (pide permiso si hace falta)
-export const sendAs = async ({ isAdmin, getGmailToken }, payload) => {
-  if (isAdmin) return sendViaFunction(payload);
+// `getGmailToken` viene de useAuth (pide permiso si hace falta).
+// `onLateSuccess`: el envío se dio por fallido por tiempo, pero al final salió.
+export const sendAs = async ({ isAdmin, getGmailToken }, payload, { onLateSuccess } = {}) => {
+  const timed = (p) => withTimeout(p, SEND_TIMEOUT_MS, onLateSuccess);
+  if (isAdmin) return timed(sendViaFunction(payload));
   let token = await getGmailToken();
   try {
-    return await sendFromBrowser(token, payload);
+    return await timed(sendFromBrowser(token, payload));
   } catch (err) {
     // Si Google revocó o venció el permiso antes de tiempo, se pide de nuevo una vez
     if (err.status !== 401) throw err;
     token = await getGmailToken({ force: true });
-    return sendFromBrowser(token, payload);
+    return timed(sendFromBrowser(token, payload));
   }
 };
