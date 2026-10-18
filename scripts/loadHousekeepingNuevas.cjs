@@ -40,6 +40,22 @@ for (const m of countriesSrc.matchAll(/code: '([A-Z]{2})', name: '([^']+)'/g)) {
 
 const { norm } = lib;
 
+// Segundo filtro (la lista de Overture ya trae uno): variantes por país de los proveedores
+// de email personal (hotmail.de, outlook.fr, yahoo.ro...) y nombres de alquiler particular
+// compuestos (Gästezimmer, Appartementhaus...) que el primero dejaba pasar. Los chalets se
+// quedan: en los Alpes muchos son chalets con personal que contratan para la temporada.
+const PERSONAL = /^(gmail|googlemail|hotmail|outlook|live|windowslive|msn|yahoo|ymail|aol|icloud|me|mac|gmx|web|freenet|arcor|t-online|bluemail|bluewin|hispeed|sunrise|aon|chello|inode|proton|protonmail)\.(com|net|[a-z]{2}|co\.[a-z]{2}|com\.[a-z]{2})$/;
+const ALQUILER = /(zimmer|appartement|apartment|apartman|ferienwohn|ferienhaus|fewo|holiday home|casa vacanz)/;
+const ESTABLECIMIENTO = /hotel|resort|hostel|lodge|\binn\b|motel|\bspa\b|gasthof|gasthaus|pension|albergo|jugendherberge/;
+const descarte = e => {
+  // Un hotel con email de hotmail o bluemail sigue siendo un hotel: se queda
+  const nombre = norm(e.nombre);
+  if (ESTABLECIMIENTO.test(nombre)) return null;
+  if (PERSONAL.test(e.email.trim().toLowerCase().split('@')[1] || '')) return 'email personal';
+  if (ALQUILER.test(nombre)) return 'alquiler particular';
+  return null;
+};
+
 (async () => {
   const all = JSON.parse(fs.readFileSync(FILE, 'utf8'));
   const subset = all.filter(e => COUNTRY[e.pais]);
@@ -59,7 +75,10 @@ const { norm } = lib;
   let nextId = maxId + 1;
   const now = new Date().toISOString();
 
+  const descartadas = {};
   for (const e of subset) {
+    const motivo = descarte(e);
+    if (motivo) { descartadas[motivo] = (descartadas[motivo] || 0) + 1; continue; }
     const email = e.email.trim().toLowerCase();
     if (byEmail.has(email) || seenEmail.has(email)) { skipped.push(`${e.nombre} <${email}> (email duplicado)`); continue; }
     if (byName.has(norm(e.nombre))) { skipped.push(`${e.nombre} (nombre ya en la base)`); continue; }
@@ -78,6 +97,7 @@ const { norm } = lib;
   const byCountry = {};
   toCreate.forEach(c => { byCountry[c.country] = (byCountry[c.country] || 0) + 1; });
   console.log('Por país:', JSON.stringify(byCountry));
+  console.log('Descartadas por el filtro:', JSON.stringify(descartadas));
   skipped.slice(0, 20).forEach(s => console.log(`   skip: ${s}`));
   if (skipped.length > 20) console.log(`   ... y ${skipped.length - 20} más`);
   console.log('\nMuestra:');
